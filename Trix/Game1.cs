@@ -24,9 +24,6 @@ namespace Trix
         KeyboardState keyboardState;
         bool wireFrame = false;
 
-        private const int gridSize = 64;
-        Volume[,] grid = new Volume[gridSize, gridSize];
-
         public Game1()
         {
             graphics = new GraphicsDeviceManager(this);
@@ -45,7 +42,7 @@ namespace Trix
 
             base.Initialize();
 
-            _chunkManager = new ChunkManager();
+            _chunkManager = new ChunkManager(this.GraphicsDevice);
 
             //var data = new uint[3 * 3 *3];
             //for(var i =0;i < data.Length;i++){
@@ -55,35 +52,7 @@ namespace Trix
 
             //_volume = new Volume(_chunkManager, 0, 0, 0, data, new Dimensions(new int[] { 3, 3, 3 }));
 
-            var terrainTimer = new Stopwatch();
-            var surfaceTimer = new Stopwatch();
-
-            var CHUNK_SIZE = 16;
-            var sealevel = 8;
-            var noise = NoiseType.Perlin;
-            for (var x = 0; x < gridSize; x++)
-            {
-                for (var z = 0; z < gridSize; z++)
-                {
-                    terrainTimer.Start();
-                    grid[x, z] = SurfaceExtractor.makeVoxels(_chunkManager, x * CHUNK_SIZE, 0, z * CHUNK_SIZE,
-                         new int[] { 0, 0, 0 },
-                         new int[] { CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE },
-                            Generators.GenerateHeight(x, 0, z, CHUNK_SIZE, CHUNK_SIZE, noise, sealevel)
-                         );
-                    terrainTimer.Stop();
-
-                    grid[x, z]._device = this.GraphicsDevice;
-
-                    surfaceTimer.Start();
-                    var count = SurfaceExtractor.GenerateMesh2(this.GraphicsDevice, null, grid[x, z], centered: true);
-                    surfaceTimer.Stop();
-                }
-            }
-
-            System.Diagnostics.Trace.WriteLine("Terrain: " + terrainTimer.Elapsed.ToString());
-            System.Diagnostics.Trace.WriteLine("Surface: " + surfaceTimer.Elapsed.ToString());
-
+         
             float tilt = MathHelper.ToRadians(0);  // 0 degree angle
             // Use the world matrix to tilt the cube along x and y axes.
             worldMatrix = Matrix.CreateRotationX(tilt) * Matrix.CreateRotationY(tilt);
@@ -143,6 +112,8 @@ namespace Trix
 
             mouseState = Mouse.GetState();
             keyboardState = Keyboard.GetState();
+
+            _chunkManager.Initialize();
         }
 
         /// <summary>
@@ -203,37 +174,19 @@ namespace Trix
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
 
-            var currentSecond = (int)gameTime.TotalGameTime.TotalSeconds;
-            if (lastSecond != currentSecond)
-            {
-                lastSecond = currentSecond;
-                var vertexCount = 0;
-                for (var x = 0; x < gridSize; x++)
-                    for (var z = 0; z < gridSize; z++)
-                        vertexCount += grid[x, z].opaqueMesh.PrimitiveCount;
+            //var currentSecond = (int)gameTime.TotalGameTime.TotalSeconds;
+            //if (lastSecond != currentSecond)
+            //{
+            //    lastSecond = currentSecond;
+            //    var vertexCount = 0;
+            //    for (var x = 0; x < gridSize; x++)
+            //        for (var z = 0; z < gridSize; z++)
+            //            vertexCount += grid[x, z].opaqueMesh.PrimitiveCount;
 
-                System.Diagnostics.Trace.WriteLine(1 / gameTime.ElapsedGameTime.TotalSeconds + ":" + vertexCount);
-            }
+            //    System.Diagnostics.Trace.WriteLine(1 / gameTime.ElapsedGameTime.TotalSeconds + ":" + vertexCount);
+            //}
 
-            var rast = new RasterizerState();
-            rast.FillMode = wireFrame ? FillMode.WireFrame : FillMode.Solid;
-            GraphicsDevice.RasterizerState = rast;
-
-            // TODO: Add your drawing code here
-            foreach (EffectPass pass in basicEffect.CurrentTechnique.Passes)
-            {
-                for (var x = 0; x < gridSize; x++)
-                {
-                    for (var z = 0; z < gridSize; z++)
-                    {
-                        //basicEffect.World = worldMatrix * Matrix.CreateRotationY((float)gameTime.TotalGameTime.TotalSeconds / 2);
-                        basicEffect.World = worldMatrix * Matrix.CreateTranslation(new Vector3(x * 16 - (gridSize * 16 / 2), 0, z * 16 - (gridSize * 16 / 2))) * Matrix.CreateRotationY((float)gameTime.TotalGameTime.TotalSeconds / 2);
-                        pass.Apply();
-                        grid[x, z].opaqueMesh.Draw();
-                    }
-                }
-            }
-
+            _chunkManager.Draw(gameTime, basicEffect, worldMatrix, wireFrame); 
             base.Draw(gameTime);
         }
     }

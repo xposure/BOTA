@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using Microsoft.Xna.Framework;
@@ -12,11 +13,96 @@ public class VoxelMesh
 
 public class ChunkManager
 {
+    private const int GRID_SIZE = 16;
+    private const int CHUNK_SIZE = 1;
+    private const int worldSize = GRID_SIZE * CHUNK_SIZE;
 
+    GraphicsDevice device;
+    Volume[,] grid = new Volume[GRID_SIZE, GRID_SIZE];
+
+    public ChunkManager(GraphicsDevice device)
+    {
+        this.device = device;
+    }
+
+    public void Initialize()
+    {
+        var terrainTimer = new Stopwatch();
+        var surfaceTimer = new Stopwatch();
+
+        var sealevel = 8;
+        var noise = NoiseType.Perlin;
+        terrainTimer.Start();
+        for (var x = 0; x < GRID_SIZE; x++)
+        {
+            for (var z = 0; z < GRID_SIZE; z++)
+            {
+                grid[x, z] = SurfaceExtractor.makeVoxels(this, x * CHUNK_SIZE, 0, z * CHUNK_SIZE,
+                     new int[] { 0, 0, 0 },
+                     new int[] { CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE },
+                        Generators.GenerateHeight(x, 0, z, CHUNK_SIZE, CHUNK_SIZE, noise, sealevel)
+                     );
+
+                grid[x, z]._device = device;
+            }
+        }
+        terrainTimer.Stop();
+
+
+        surfaceTimer.Start();
+        for (var x = 0; x < GRID_SIZE; x++)
+            for (var z = 0; z < GRID_SIZE; z++)
+                SurfaceExtractor.GenerateMesh2(this, device, null, grid[x, z], centered: true);
+        surfaceTimer.Stop();
+
+        System.Diagnostics.Trace.WriteLine("Terrain: " + terrainTimer.Elapsed.ToString());
+        System.Diagnostics.Trace.WriteLine("Surface: " + surfaceTimer.Elapsed.ToString());
+
+
+    }
+    public uint GetVoxelByRelative(int cx, int cz, int x, int y, int z)
+    {
+        return GetVoxelByWorld(cx * CHUNK_SIZE + x, y, cz * CHUNK_SIZE + z);
+    }
+
+    public uint GetVoxelByWorld(int wx, int wy, int wz)
+    {
+        if (wx < 0 || wy < 0 || wz < 0 || wx >= worldSize || wy >= CHUNK_SIZE || wz >= worldSize)
+            return 0;
+
+        var cx = wx / CHUNK_SIZE;
+        var cz = wz / CHUNK_SIZE;
+
+        var volume = grid[cx, cz];
+        return volume[wx - (cx * CHUNK_SIZE), wy, wz - (cz * CHUNK_SIZE)];
+    }
+
+    public void Draw(GameTime gameTime, BasicEffect basicEffect, Matrix worldMatrix, bool wireFrame)
+    {
+        var rast = new RasterizerState();
+        rast.FillMode = wireFrame ? FillMode.WireFrame : FillMode.Solid;
+        device.RasterizerState = rast;
+
+        // TODO: Add your drawing code here
+        foreach (EffectPass pass in basicEffect.CurrentTechnique.Passes)
+        {
+            for (var x = 0; x < GRID_SIZE; x++)
+            {
+                for (var z = 0; z < GRID_SIZE; z++)
+                {
+                    //basicEffect.World = worldMatrix * Matrix.CreateRotationY((float)gameTime.TotalGameTime.TotalSeconds / 2);
+                    basicEffect.World = worldMatrix * Matrix.CreateTranslation(new Vector3(x * CHUNK_SIZE - (GRID_SIZE * CHUNK_SIZE / 2), 0, z * CHUNK_SIZE - (GRID_SIZE * CHUNK_SIZE / 2))) * Matrix.CreateRotationY((float)gameTime.TotalGameTime.TotalSeconds / 2);
+                    pass.Apply();
+                    grid[x, z].opaqueMesh.Draw();
+                }
+            }
+        }
+
+    }
 }
 
 public class DynamicMesh<T>
-    where T: struct, IVertexType
+    where T : struct, IVertexType
 {
     private GraphicsDevice _device;
     private VertexDeclaration _decl;
@@ -76,15 +162,15 @@ public class DynamicMesh<T>
         {
             if (_vertexBuffer == null || _vertexBuffer.VertexCount < _vertexData.Count)
             {
-                if(_vertexBuffer != null)
+                if (_vertexBuffer != null)
                     _vertexBuffer.Dispose();
 
-                _vertexBuffer = new VertexBuffer(_device, _decl, _vertexData.Count * 3 / 2, BufferUsage.WriteOnly);                
+                _vertexBuffer = new VertexBuffer(_device, _decl, _vertexData.Count * 3 / 2, BufferUsage.WriteOnly);
             }
 
             if (_indexData.Count > 0 && (_indexBuffer == null || _indexBuffer.IndexCount < _indexData.Count))
             {
-                if(_indexBuffer != null)
+                if (_indexBuffer != null)
                     _indexBuffer.Dispose();
 
                 _indexBuffer = new IndexBuffer(_device, IndexElementSize.SixteenBits, _indexData.Count * 3 / 2, BufferUsage.WriteOnly);
@@ -134,7 +220,7 @@ public class Volume
 {
     public GraphicsDevice _device;
     public ChunkManager cm;
-    
+
     public DynamicMesh<VertexPositionColor> opaqueMesh;
     public DynamicMesh<VertexPositionColor> waterMesh;
     public Dimensions dims;
@@ -211,7 +297,7 @@ public class Volume
     {
         if (opaqueMesh != null && opaqueMesh.VertexCount > 0)
         {
-            var p = new Vector3(X, 0, Z) ;
+            var p = new Vector3(X, 0, Z);
             var m = Matrix.CreateTranslation(p);
             //opaqueMesh.Draw();
             opaqueMesh.Draw();
@@ -222,7 +308,7 @@ public class Volume
     {
         if (waterMesh != null && waterMesh.VertexCount > 0)
         {
-            var p = new Vector3(X, 0, Z) ;
+            var p = new Vector3(X, 0, Z);
             var m = Matrix.CreateTranslation(p);
             waterMesh.Draw();
             //waterMesh.Draw(m);
@@ -343,7 +429,8 @@ public class SurfaceExtractor
         var f = new Func<int, int, int, uint>((i, j, k) =>
         {
             if (i < 0 || j < 0 || k < 0 || i >= dims[0] || j >= dims[1] || k >= dims[2])
-                return 0;
+                return cm.GetVoxelByRelative(volume.X, volume.Z, i, j, k);
+            //return 0;
 
             var r = volume[i + dims[0] * (j + dims[1] * k)];
             if (r > 0 && (r & 0x1000000u) > 0u)
@@ -560,8 +647,8 @@ public class SurfaceExtractor
 
                                 vertices[o].Color = new Color(cr * ao, cg * ao, cb * ao);
                                 //uvs.Add(new Vector2(ao, 0));
-                                
-                                
+
+
                                 //colors.Add(ugh[maskLayout[n].GetOcclusion(o)]);
 
                                 //aouvs[o] = ao;
@@ -581,7 +668,7 @@ public class SurfaceExtractor
                                 vertices[1].Position = new Vector3(x[0] + du[0], x[1] + du[1], x[2] + du[2]) - new Vector3(dims[0], dims[1], dims[2]) / 2f;
                                 vertices[2].Position = new Vector3(x[0] + du[0] + dv[0], x[1] + du[1] + dv[1], x[2] + du[2] + dv[2]) - new Vector3(dims[0], dims[1], dims[2]) / 2f;
                                 vertices[3].Position = new Vector3(x[0] + dv[0], x[1] + dv[1], x[2] + dv[2]) - new Vector3(dims[0], dims[1], dims[2]) / 2f;
-                                
+
                                 //This vert generation code will make the 0,0,0 be the center of the mesh in worldspace
                                 //vertices.Add(new Vector3(x[0], x[1], x[2]) - new Vector3(dims[0], dims[1], dims[2]) / 2f);
                                 //vertices.Add(new Vector3(x[0] + du[0], x[1] + du[1], x[2] + du[2]) - new Vector3(dims[0], dims[1], dims[2]) / 2f);
@@ -849,7 +936,7 @@ public class SurfaceExtractor
 
 
 
-    public static int GenerateMesh2( GraphicsDevice device, VoxelMesh mesh, Volume volume, bool centered = false, bool disableGreedyMeshing = false, bool disableAO = false)
+    public static int GenerateMesh2(ChunkManager cm, GraphicsDevice device, VoxelMesh mesh, Volume volume, bool centered = false, bool disableGreedyMeshing = false, bool disableAO = false)
     {
         volume.PrepareMesh(device);
         //vertices.Clear();
@@ -865,7 +952,8 @@ public class SurfaceExtractor
         var f = new Func<int, int, int, uint>((i, j, k) =>
         {
             if (i < 0 || j < 0 || k < 0 || i >= dims[0] || j >= dims[1] || k >= dims[2])
-                return 0;
+                return cm.GetVoxelByRelative(volume.X, volume.Z, i, j, k);
+            //return 0;
 
             var r = volume[i + dims[0] * (j + dims[1] * k)];
             if (r > 0 && (r & 0x1000000u) > 0u)
