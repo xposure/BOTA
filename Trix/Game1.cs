@@ -174,17 +174,17 @@ namespace Trix
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
 
-            //var currentSecond = (int)gameTime.TotalGameTime.TotalSeconds;
-            //if (lastSecond != currentSecond)
-            //{
-            //    lastSecond = currentSecond;
-            //    var vertexCount = 0;
-            //    for (var x = 0; x < gridSize; x++)
-            //        for (var z = 0; z < gridSize; z++)
-            //            vertexCount += grid[x, z].opaqueMesh.PrimitiveCount;
+            var currentSecond = (int)gameTime.TotalGameTime.TotalSeconds;
+            if (lastSecond != currentSecond)
+            {
+                lastSecond = currentSecond;
+                var vertexCount = 0;
+                //for (var x = 0; x < gridSize; x++)
+                //    for (var z = 0; z < gridSize; z++)
+                //        vertexCount += grid[x, z].opaqueMesh.PrimitiveCount;
 
-            //    System.Diagnostics.Trace.WriteLine(1 / gameTime.ElapsedGameTime.TotalSeconds + ":" + vertexCount);
-            //}
+                System.Diagnostics.Trace.WriteLine(1 / gameTime.ElapsedGameTime.TotalSeconds + ":" + vertexCount);
+            }
 
             _chunkManager.Draw(gameTime, basicEffect, worldMatrix, wireFrame); 
             base.Draw(gameTime);

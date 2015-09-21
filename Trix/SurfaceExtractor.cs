@@ -13,8 +13,8 @@ public class VoxelMesh
 
 public class ChunkManager
 {
-    private const int GRID_SIZE = 16;
-    private const int CHUNK_SIZE = 1;
+    private const int GRID_SIZE = 64;
+    private const int CHUNK_SIZE = 16;
     private const int worldSize = GRID_SIZE * CHUNK_SIZE;
 
     GraphicsDevice device;
