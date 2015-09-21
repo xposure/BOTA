@@ -5,20 +5,152 @@ using System.Linq;
 using System.Text;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Trix;
 
-public class VoxelMesh
+/*
+ * - Async Chunking
+ *      Threaded chunk logic
+ * - Loading
+ *      Pulling data from HDD or generating it from noise
+ * - Rebuilding
+ *      There are different levels of rebuilding (light, mesh, water, etc?)
+ * - Unloading
+ * - Render
+ * - Culling
+ *      Breadth First Search using flood fill to determine what should be rendered
+ */
+
+
+public class Chunk
 {
+    /*
+     * Questions
+     *  - Are we lit?
+     *  - Are we generated?
+     *  - Do we have 
+     * 
+     */
 
+
+    private int x, y, z;
+    private GraphicsDevice device;
+    private Volume volume;
+
+    public Vector3 Position { get { return new Vector3(x, y, z); } }
+
+    public int WorldX { get { return x * ChunkManager.CHUNK_SIZE; } }
+    public int WorldY { get { return y * ChunkManager.CHUNK_SIZE; } }
+    public int WorldZ { get { return z * ChunkManager.CHUNK_SIZE; } }
+    public Vector3 WorldPosition { get { return Position * ChunkManager.CHUNK_SIZE; } }
+
+    public Chunk(int x, int y, int z, GraphicsDevice device)
+    {
+        this.x = x;
+        this.y = y;
+        this.z = z;
+        this.device = device;
+    }
+
+    public void Generate(ChunkManager cm)
+    {
+        var h = new int[] { 0, ChunkManager.CHUNK_SIZE };
+        var w = new int[] { 0, ChunkManager.CHUNK_SIZE };
+        var l = new int[] { 0, ChunkManager.CHUNK_SIZE };
+
+        //int[] d = { h[0] - l[0], h[1] - l[1], h[2] - l[2] };
+        int[] d = { ChunkManager.CHUNK_SIZE, ChunkManager.CHUNK_SIZE, ChunkManager.CHUNK_SIZE };
+        uint[] v = new uint[d[0] * d[1] * d[2]];
+        volume = new Volume(cm, x, y, z, v, new Dimensions(d));
+        cm.WorldGenerator.GetChunk(x, z, y, volume);
+    }
+
+    public void UpdateMesh(ChunkManager cm)
+    {
+        SurfaceExtractor.GenerateMesh2(cm, device, volume, centered: true);
+    }
+
+    public void Draw()
+    {
+        this.volume.opaqueMesh.Draw();
+    }
+
+    public uint this[int x, int y, int z]
+    {
+        get
+        {
+            return volume[x, y, z];
+        }
+
+        set
+        {
+            volume[x, y, z] = value;
+        }
+    }
+
+}
+
+public class ChunkColumn
+{
+    //private byte[,] _sunlightDepth = new byte[ChunkManager.CHUNK_SIZE, ChunkManager.CHUNK_SIZE];
+    private Chunk[] chunks = new Chunk[ChunkManager.CHUNKS_PER_COLUMN];
+    private int x, z;
+    private GraphicsDevice device;
+
+    public ChunkColumn(int x, int z, GraphicsDevice device)
+    {
+        this.x = x;
+        this.z = z;
+        this.device = device;
+
+        for (var y = 0; y < chunks.Length; y++)
+            chunks[y] = new Chunk(x, y, z, device);
+    }
+
+    public void Init(ChunkManager cm)
+    {
+        for (var y = 0; y < chunks.Length; y++)
+            chunks[y].Generate(cm);
+    }
+
+    public void UpdateMesh(ChunkManager cm)
+    {
+        for (var y = 0; y < chunks.Length; y++)
+            chunks[y].UpdateMesh(cm);
+    }
+
+    public Chunk this[int index]
+    {
+        get
+        {
+            if (index < 0)
+                return null;
+
+            if (index >= chunks.Length)
+                return null;
+
+            return chunks[index];
+        }
+    }
 }
 
 public class ChunkManager
 {
-    private const int GRID_SIZE = 64;
-    private const int CHUNK_SIZE = 16;
+    private const int GRID_SIZE = 8;
+    public const int CHUNK_SIZE = 16;
+    public const int CHUNK_SIZE2 = CHUNK_SIZE * CHUNK_SIZE;
+    public const int CHUNK_SIZE3 = CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE;
+    public const int CHUNK_HEIGHT = 128;
+    public const int CHUNKS_PER_COLUMN = CHUNK_HEIGHT / CHUNK_SIZE;
+
+
     private const int worldSize = GRID_SIZE * CHUNK_SIZE;
 
-    GraphicsDevice device;
-    Volume[,] grid = new Volume[GRID_SIZE, GRID_SIZE];
+    private GraphicsDevice device;
+    private ChunkColumn[,] grid = new ChunkColumn[GRID_SIZE, GRID_SIZE];
+    private DefaultWorldGenerator worldGen = new DefaultWorldGenerator();
+
+    public DefaultWorldGenerator WorldGenerator { get { return worldGen; } }
+
 
     public ChunkManager(GraphicsDevice device)
     {
@@ -27,23 +159,19 @@ public class ChunkManager
 
     public void Initialize()
     {
+        worldGen.Init();
+        worldGen.Start();
+
         var terrainTimer = new Stopwatch();
         var surfaceTimer = new Stopwatch();
 
-        var sealevel = 8;
-        var noise = NoiseType.Perlin;
         terrainTimer.Start();
         for (var x = 0; x < GRID_SIZE; x++)
         {
             for (var z = 0; z < GRID_SIZE; z++)
             {
-                grid[x, z] = SurfaceExtractor.makeVoxels(this, x * CHUNK_SIZE, 0, z * CHUNK_SIZE,
-                     new int[] { 0, 0, 0 },
-                     new int[] { CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE },
-                        Generators.GenerateHeight(x, 0, z, CHUNK_SIZE, CHUNK_SIZE, noise, sealevel)
-                     );
-
-                grid[x, z]._device = device;
+                grid[x, z] = new ChunkColumn(x, z, device);
+                grid[x, z].Init(this);
             }
         }
         terrainTimer.Stop();
@@ -52,7 +180,8 @@ public class ChunkManager
         surfaceTimer.Start();
         for (var x = 0; x < GRID_SIZE; x++)
             for (var z = 0; z < GRID_SIZE; z++)
-                SurfaceExtractor.GenerateMesh2(this, device, null, grid[x, z], centered: true);
+                grid[x, z].UpdateMesh(this);
+
         surfaceTimer.Stop();
 
         System.Diagnostics.Trace.WriteLine("Terrain: " + terrainTimer.Elapsed.ToString());
@@ -60,9 +189,9 @@ public class ChunkManager
 
 
     }
-    public uint GetVoxelByRelative(int cx, int cz, int x, int y, int z)
+    public uint GetVoxelByRelative(int cx, int cy, int cz, int x, int y, int z)
     {
-        return GetVoxelByWorld(cx * CHUNK_SIZE + x, y, cz * CHUNK_SIZE + z);
+        return GetVoxelByWorld(cx * CHUNK_SIZE + x, cy * CHUNK_SIZE + y, cz * CHUNK_SIZE + z);
     }
 
     public uint GetVoxelByWorld(int wx, int wy, int wz)
@@ -72,32 +201,77 @@ public class ChunkManager
 
         var cx = wx / CHUNK_SIZE;
         var cz = wz / CHUNK_SIZE;
+        var cy = wy / CHUNK_SIZE;
 
-        var volume = grid[cx, cz];
-        return volume[wx - (cx * CHUNK_SIZE), wy, wz - (cz * CHUNK_SIZE)];
+        var column = grid[cx, cz];
+        var volume = column[cy];
+
+        return volume[wx - (cx * CHUNK_SIZE), wy - (cy * CHUNK_SIZE), wz - (cz * CHUNK_SIZE)];
     }
 
-    public void Draw(GameTime gameTime, BasicEffect basicEffect, Matrix worldMatrix, bool wireFrame)
+    public void Draw(GameTime gameTime, BasicEffect opaque, BasicEffect wireFrame, Matrix worldMatrix)
     {
-        var rast = new RasterizerState();
-        rast.FillMode = wireFrame ? FillMode.WireFrame : FillMode.Solid;
-        device.RasterizerState = rast;
 
-        // TODO: Add your drawing code here
-        foreach (EffectPass pass in basicEffect.CurrentTechnique.Passes)
+        if (wireFrame != null)
         {
-            for (var x = 0; x < GRID_SIZE; x++)
+            var rast = new RasterizerState();
+            rast.FillMode = FillMode.WireFrame;
+
+            //var depth = new DepthStencilState();
+            //depth.DepthBufferFunction = CompareFunction.Never;
+            //depth.DepthBufferEnable = true;
+            //depth.DepthBufferWriteEnable = false;
+
+            device.RasterizerState = rast;
+            //device.DepthStencilState = depth;
+
+            // TODO: Add your drawing code here
+            foreach (EffectPass pass in wireFrame.CurrentTechnique.Passes)
             {
-                for (var z = 0; z < GRID_SIZE; z++)
+                for (var x = 0; x < GRID_SIZE; x++)
                 {
-                    //basicEffect.World = worldMatrix * Matrix.CreateRotationY((float)gameTime.TotalGameTime.TotalSeconds / 2);
-                    basicEffect.World = worldMatrix * Matrix.CreateTranslation(new Vector3(x * CHUNK_SIZE - (GRID_SIZE * CHUNK_SIZE / 2), 0, z * CHUNK_SIZE - (GRID_SIZE * CHUNK_SIZE / 2))) * Matrix.CreateRotationY((float)gameTime.TotalGameTime.TotalSeconds / 2);
-                    pass.Apply();
-                    grid[x, z].opaqueMesh.Draw();
+                    for (var z = 0; z < GRID_SIZE; z++)
+                    {
+                        var column = grid[x, z];
+                        for (var y = 0; y < CHUNKS_PER_COLUMN; y++)
+                        {
+                            //basicEffect.World = worldMatrix * Matrix.CreateRotationY((float)gameTime.TotalGameTime.TotalSeconds / 2);
+                            var chunk = column[y];
+                            wireFrame.World = Matrix.CreateTranslation(chunk.WorldPosition);
+                            pass.Apply();
+                            chunk.Draw();
+                        }
+                    }
                 }
             }
         }
 
+        {
+            var rast = new RasterizerState();
+            device.RasterizerState = rast;
+
+            //var depth = DepthStencilState.Default;
+            //device.DepthStencilState = depth;
+
+            foreach (EffectPass pass in opaque.CurrentTechnique.Passes)
+            {
+                for (var x = 0; x < GRID_SIZE; x++)
+                {
+                    for (var z = 0; z < GRID_SIZE; z++)
+                    {
+                        var column = grid[x, z];
+                        for (var y = 0; y < CHUNKS_PER_COLUMN; y++)
+                        {
+                            //basicEffect.World = worldMatrix * Matrix.CreateRotationY((float)gameTime.TotalGameTime.TotalSeconds / 2);
+                            var chunk = column[y];
+                            opaque.World = Matrix.CreateTranslation(chunk.WorldPosition);
+                            pass.Apply();
+                            chunk.Draw();
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -188,6 +362,9 @@ public class DynamicMesh<T>
 
     public void Draw()
     {
+        if (_vertexBuffer == null)
+            return;
+
         if (_indexBuffer != null && _indexBuffer.IndexCount > 0)
         {
             _device.Indices = _indexBuffer;
@@ -319,7 +496,7 @@ public class SurfaceExtractor
 {
     static uint[] mask = new uint[4096];
     static MaskLayout[] maskLayout = new MaskLayout[4096];
-
+    //static DefaultWorldGenerator gen = new DefaultWorldGenerator();
     //public static List<Vector3> vertices = new List<Vector3>(65536);
     //public static List<int> faces = new List<int>(65536);
     //public static List<Vector2> uvs = new List<Vector2>(65536);
@@ -327,20 +504,32 @@ public class SurfaceExtractor
     //public static List<Color> colors = new List<Color>(65536);
 
 
-    public static Volume makeVoxels(ChunkManager cm, int x, int y, int z, int[] l, int[] h, Func<int, int, int, uint> f)
-    {
-        int[] d = { h[0] - l[0], h[1] - l[1], h[2] - l[2] };
-        uint[] v = new uint[d[0] * d[1] * d[2]];
-        int n = 0;
-        for (var k = l[2]; k < h[2]; ++k)
-            for (var j = l[1]; j < h[1]; ++j)
-                for (var i = l[0]; i < h[0]; ++i, ++n)
-                {
-                    v[n] = f(i, j, k);
-                }
+    //static SurfaceExtractor()
+    //{
+    //    gen.Init();
+    //    gen.Start();
+    //}
 
-        return new Volume(cm, x, y, z, v, new Dimensions(d));
-    }
+    //public static Volume makeVoxels(ChunkManager cm, int x, int y, int z, int[] l, int[] h, Func<int, int, int, uint> f)
+    //{
+    //    int[] d = { h[0] - l[0], h[1] - l[1], h[2] - l[2] };
+    //    uint[] v = new uint[d[0] * d[1] * d[2]];
+    //    var volume = new Volume(cm, x , y, z, v, new Dimensions(d));
+    //    gen.GetChunk(x / ChunkManager.CHUNK_SIZE, z, y / ChunkManager.CHUNK_SIZE, volume);
+    //    return volume;
+
+    //    //int[] d = { h[0] - l[0], h[1] - l[1], h[2] - l[2] };
+    //    //uint[] v = new uint[d[0] * d[1] * d[2]];
+    //    //int n = 0;
+    //    //for (var k = l[2]; k < h[2]; ++k)
+    //    //    for (var j = l[1]; j < h[1]; ++j)
+    //    //        for (var i = l[0]; i < h[0]; ++i, ++n)
+    //    //        {
+    //    //            v[n] = f(i, j, k);
+    //    //        }
+
+    //    //return new Volume(cm, x, y, z, v, new Dimensions(d));
+    //}
 
     public struct MaskLayout
     {
@@ -429,7 +618,7 @@ public class SurfaceExtractor
         var f = new Func<int, int, int, uint>((i, j, k) =>
         {
             if (i < 0 || j < 0 || k < 0 || i >= dims[0] || j >= dims[1] || k >= dims[2])
-                return cm.GetVoxelByRelative(volume.X, volume.Z, i, j, k);
+                return cm.GetVoxelByRelative(volume.X, volume.Y, volume.Z, i, j, k);
             //return 0;
 
             var r = volume[i + dims[0] * (j + dims[1] * k)];
@@ -936,7 +1125,7 @@ public class SurfaceExtractor
 
 
 
-    public static int GenerateMesh2(ChunkManager cm, GraphicsDevice device, VoxelMesh mesh, Volume volume, bool centered = false, bool disableGreedyMeshing = false, bool disableAO = false)
+    public static int GenerateMesh2(ChunkManager cm, GraphicsDevice device, Volume volume, bool centered = false, bool disableGreedyMeshing = false, bool disableAO = false)
     {
         volume.PrepareMesh(device);
         //vertices.Clear();
@@ -952,7 +1141,7 @@ public class SurfaceExtractor
         var f = new Func<int, int, int, uint>((i, j, k) =>
         {
             if (i < 0 || j < 0 || k < 0 || i >= dims[0] || j >= dims[1] || k >= dims[2])
-                return cm.GetVoxelByRelative(volume.X, volume.Z, i, j, k);
+                return cm.GetVoxelByRelative(volume.X, volume.Y, volume.Z, i, j, k);
             //return 0;
 
             var r = volume[i + dims[0] * (j + dims[1] * k)];
@@ -964,6 +1153,7 @@ public class SurfaceExtractor
         });
 
         //Sweep over 3-axes
+        // d0 = x, d1 = y, d2 = z
         for (var d = 0; d < 3; ++d)
         {
             int i, j, k, l, w, h
@@ -1005,8 +1195,10 @@ public class SurfaceExtractor
                         //if (x[d] < 0 && cm != null)
                         //    a = cm.GetBlock(volume.X + x[0], volume.Y + x[1], volume.Z + x[2]);
                         //else
-                        var a = (0u <= x[d] ? f(x[0], x[1], x[2]) : 0u);
-                        var b = (x[d] < dims[d] - 1 ? f(x[0] + q[0], x[1] + q[1], x[2] + q[2]) : 0u);
+                        //var a = (0u <= x[d] ? f(x[0], x[1], x[2]) : 0u);
+                        //var b = (x[d] < dims[d] - 1 ? f(x[0] + q[0], x[1] + q[1], x[2] + q[2]) : 0u);
+                        var a = f(x[0], x[1], x[2]);
+                        var b = f(x[0] + q[0], x[1] + q[1], x[2] + q[2]);
 
                         maskLayout[n].data = 0u;
                         if ((a != 0) == (b != 0))

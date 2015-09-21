@@ -39,6 +39,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ChunkManager.cs" />
+    <Compile Include="DefaultWorldGenerator.cs" />
     <Compile Include="Game1.cs" />
     <Compile Include="Generators\Fill.cs" />
     <Compile Include="Generators\Generators.cs" />
@@ -49,8 +50,8 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="LibNoise, Version=0.2.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>packages\LibNoise.0.2\lib\NET40\LibNoise.dll</HintPath>
-      <Private>True</Private>
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\Lib\LibNoise.dll</HintPath>
     </Reference>
     <Reference Include="MonoGame.Framework">
       <HintPath>$(MSBuildProgramFiles32)\MonoGame\v3.0\Assemblies\Windows\MonoGame.Framework.dll</HintPath>

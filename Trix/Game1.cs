@@ -16,13 +16,14 @@ namespace Trix
         ChunkManager _chunkManager;
         //Volume _volume;
         BasicEffect basicEffect;
+        BasicEffect wireFrame;
         Matrix worldMatrix;
         Matrix viewMatrix;
         Matrix projectionMatrix;
         float zoom = 25;
         MouseState mouseState;
         KeyboardState keyboardState;
-        bool wireFrame = false;
+        bool wireFrameEnabled = false;
 
         public Game1()
         {
@@ -77,6 +78,21 @@ namespace Trix
             basicEffect.SpecularPower = 5.0f;
             basicEffect.Alpha = 1.0f;
             basicEffect.VertexColorEnabled = true;
+
+
+            wireFrame = new BasicEffect(graphics.GraphicsDevice);
+
+            wireFrame.World = worldMatrix;
+            wireFrame.View = viewMatrix;
+            wireFrame.Projection = projectionMatrix;
+
+            // primitive color
+            wireFrame.AmbientLightColor = new Vector3(0.1f, 0.1f, 0.1f);
+            wireFrame.DiffuseColor = new Vector3(1.0f, 1.0f, 1.0f);
+            wireFrame.SpecularColor = new Vector3(0.25f, 0.25f, 0.25f);
+            wireFrame.SpecularPower = 5.0f;
+            wireFrame.Alpha = 1.0f;
+            wireFrame.VertexColorEnabled = false;
 
             //basicEffect.LightingEnabled = true;
             //if (basicEffect.LightingEnabled)
@@ -150,7 +166,7 @@ namespace Trix
                 Exit();
 
             if (newKeyboardState.IsKeyUp(Keys.F) && keyboardState.IsKeyDown(Keys.F))
-                wireFrame = !wireFrame;
+                wireFrameEnabled = !wireFrameEnabled;
             keyboardState = newKeyboardState;
 
             // TODO: Add your update logic here
@@ -163,6 +179,7 @@ namespace Trix
                 zoom = MathHelper.Clamp(zoom + (mouseState.ScrollWheelValue - newMouseState.ScrollWheelValue) / 50, 10, 9000);
                 viewMatrix = Matrix.CreateLookAt(new Vector3(0.333f, 0.333f, 0.333f) * zoom + cameraPosition, cameraPosition, Vector3.Up);
                 basicEffect.View = viewMatrix;
+                wireFrame.View = viewMatrix;
             }
             mouseState = newMouseState;
 
@@ -186,7 +203,7 @@ namespace Trix
                 System.Diagnostics.Trace.WriteLine(1 / gameTime.ElapsedGameTime.TotalSeconds + ":" + vertexCount);
             }
 
-            _chunkManager.Draw(gameTime, basicEffect, worldMatrix, wireFrame); 
+            _chunkManager.Draw(gameTime, basicEffect, wireFrameEnabled ? wireFrame : null, worldMatrix); 
             base.Draw(gameTime);
         }
     }
