@@ -196,7 +196,7 @@ public class ChunkManager
 
     public uint GetVoxelByWorld(int wx, int wy, int wz)
     {
-        if (wx < 0 || wy < 0 || wz < 0 || wx >= worldSize || wy >= CHUNK_SIZE || wz >= worldSize)
+        if (wx < 0 || wy < 0 || wz < 0 || wx >= worldSize || wy >= CHUNK_HEIGHT || wz >= worldSize)
             return 0;
 
         var cx = wx / CHUNK_SIZE;
@@ -216,7 +216,7 @@ public class ChunkManager
         {
             var rast = new RasterizerState();
             rast.FillMode = FillMode.WireFrame;
-
+            rast.CullMode = CullMode.None;
             //var depth = new DepthStencilState();
             //depth.DepthBufferFunction = CompareFunction.Never;
             //depth.DepthBufferEnable = true;
@@ -237,7 +237,7 @@ public class ChunkManager
                         {
                             //basicEffect.World = worldMatrix * Matrix.CreateRotationY((float)gameTime.TotalGameTime.TotalSeconds / 2);
                             var chunk = column[y];
-                            wireFrame.World = Matrix.CreateTranslation(chunk.WorldPosition);
+                            wireFrame.World = Matrix.CreateTranslation(chunk.WorldPosition);// *Matrix.CreateRotationZ((float)gameTime.TotalGameTime.TotalSeconds / 2);
                             pass.Apply();
                             chunk.Draw();
                         }
@@ -245,7 +245,7 @@ public class ChunkManager
                 }
             }
         }
-
+        else
         {
             var rast = new RasterizerState();
             device.RasterizerState = rast;
@@ -264,7 +264,7 @@ public class ChunkManager
                         {
                             //basicEffect.World = worldMatrix * Matrix.CreateRotationY((float)gameTime.TotalGameTime.TotalSeconds / 2);
                             var chunk = column[y];
-                            opaque.World = Matrix.CreateTranslation(chunk.WorldPosition);
+                            opaque.World = Matrix.CreateTranslation(chunk.WorldPosition);// *Matrix.CreateRotationZ((float)gameTime.TotalGameTime.TotalSeconds / 2);
                             pass.Apply();
                             chunk.Draw();
                         }
@@ -1181,7 +1181,7 @@ public class SurfaceExtractor
             negArea[2, v] = 1;
             negArea[3, u] = 1;
 
-            for (x[d] = -1; x[d] < dims[d]; )
+            for (x[d] = -1; x[d] < dims[d] - 1; )
             {
                 //Compute mask
                 //TODO: Test if the AOMASK should be created outside of the block mask
