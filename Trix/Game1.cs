@@ -17,12 +17,13 @@ namespace Trix
         //Volume _volume;
         BasicEffect basicEffect;
         BasicEffect wireFrame;
-        Matrix worldMatrix;
-        Matrix viewMatrix;
-        Matrix projectionMatrix;
-        float zoom = 25;
+        //Matrix worldMatrix;
+        //Matrix viewMatrix;
+        //Matrix projectionMatrix;
+        //float zoom = 25;
         MouseState mouseState;
         KeyboardState keyboardState;
+        Camera camera;
         bool wireFrameEnabled = false;
 
         public Game1()
@@ -53,23 +54,25 @@ namespace Trix
 
             //_volume = new Volume(_chunkManager, 0, 0, 0, data, new Dimensions(new int[] { 3, 3, 3 }));
 
+            camera = new Camera(this.GraphicsDevice);
          
-            float tilt = MathHelper.ToRadians(0);  // 0 degree angle
-            // Use the world matrix to tilt the cube along x and y axes.
-            worldMatrix = Matrix.CreateRotationX(tilt) * Matrix.CreateRotationY(tilt);
-            viewMatrix = Matrix.CreateLookAt(new Vector3(zoom, zoom, zoom), Vector3.Zero, Vector3.Up);
+            //float tilt = MathHelper.ToRadians(0);  // 0 degree angle
+            //// Use the world matrix to tilt the cube along x and y axes.
+            //worldMatrix = Matrix.CreateRotationX(tilt) * Matrix.CreateRotationY(tilt);
+            //viewMatrix = Matrix.CreateLookAt(new Vector3(zoom, zoom, zoom), Vector3.Zero, Vector3.Up);
 
-            projectionMatrix = Matrix.CreatePerspectiveFieldOfView(
-                MathHelper.ToRadians(45),  // 45 degree angle
-                (float)GraphicsDevice.Viewport.Width /
-                (float)GraphicsDevice.Viewport.Height,
-                1.0f, 10000.0f);
+            //projectionMatrix = Matrix.CreatePerspectiveFieldOfView(
+            //    MathHelper.ToRadians(45),  // 45 degree angle
+            //    (float)GraphicsDevice.Viewport.Width /
+            //    (float)GraphicsDevice.Viewport.Height,
+            //    1.0f, 10000.0f);
+
 
             basicEffect = new BasicEffect(graphics.GraphicsDevice);
 
-            basicEffect.World = worldMatrix;
-            basicEffect.View = viewMatrix;
-            basicEffect.Projection = projectionMatrix;
+            basicEffect.World = Matrix.Identity;
+            basicEffect.View = Matrix.Identity;
+            basicEffect.Projection = camera.Projection;
 
             // primitive color
             basicEffect.AmbientLightColor = new Vector3(0.1f, 0.1f, 0.1f);
@@ -82,9 +85,9 @@ namespace Trix
 
             wireFrame = new BasicEffect(graphics.GraphicsDevice);
 
-            wireFrame.World = worldMatrix;
-            wireFrame.View = viewMatrix;
-            wireFrame.Projection = projectionMatrix;
+            wireFrame.World = Matrix.Identity;
+            wireFrame.View = Matrix.Identity;
+            wireFrame.Projection = camera.Projection;
 
             // primitive color
             wireFrame.AmbientLightColor = new Vector3(0.1f, 0.1f, 0.1f);
@@ -153,36 +156,39 @@ namespace Trix
             // TODO: Unload any non ContentManager content here
         }
 
-        /// <summary>
-        /// Allows the game to run logic such as updating the world,
-        /// checking for collisions, gathering input, and playing audio.
-        /// </summary>
-        /// <param name="gameTime">Provides a snapshot of timing values.</param>
+        
         protected override void Update(GameTime gameTime)
         {
             var newKeyboardState = Keyboard.GetState();
 
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || newKeyboardState.IsKeyDown(Keys.Escape))
                 Exit();
-
-            if (newKeyboardState.IsKeyUp(Keys.F) && keyboardState.IsKeyDown(Keys.F))
-                wireFrameEnabled = !wireFrameEnabled;
-            keyboardState = newKeyboardState;
-
-            // TODO: Add your update logic here
-
-            var newMouseState = Mouse.GetState();
-            if (mouseState.ScrollWheelValue != newMouseState.ScrollWheelValue)
+            else
             {
-                var cameraPosition = new Vector3(0, 0, 0);
-                //var cameraPosition = new Vector3(gridSize * 8, 0, gridSize * 8);
-                zoom = MathHelper.Clamp(zoom + (mouseState.ScrollWheelValue - newMouseState.ScrollWheelValue) / 50, 10, 9000);
-                viewMatrix = Matrix.CreateLookAt(new Vector3(0.333f, 0.333f, 0.333f) * zoom + cameraPosition, cameraPosition, Vector3.Up);
-                basicEffect.View = viewMatrix;
-                wireFrame.View = viewMatrix;
-            }
-            mouseState = newMouseState;
+                if (newKeyboardState.IsKeyUp(Keys.F) && keyboardState.IsKeyDown(Keys.F))
+                    wireFrameEnabled = !wireFrameEnabled;
+                keyboardState = newKeyboardState;
 
+                // TODO: Add your update logic here
+
+                var newMouseState = Mouse.GetState();
+
+                camera.Update(this, gameTime, newKeyboardState, newMouseState);
+
+                basicEffect.View = camera.View;
+                wireFrame.View = camera.View;
+
+                //if (mouseState.ScrollWheelValue != newMouseState.ScrollWheelValue)
+                //{
+                //    var cameraPosition = new Vector3(0, 0, 0);
+                //    //var cameraPosition = new Vector3(gridSize * 8, 0, gridSize * 8);
+                //    zoom = MathHelper.Clamp(zoom + (mouseState.ScrollWheelValue - newMouseState.ScrollWheelValue) / 50, 10, 9000);
+                //    viewMatrix = Matrix.CreateLookAt(new Vector3(0.333f, 0.333f, 0.333f) * zoom + cameraPosition, cameraPosition, Vector3.Up);
+                //    basicEffect.View = viewMatrix;
+                //    wireFrame.View = viewMatrix;
+                //}
+                mouseState = newMouseState;
+            }
             base.Update(gameTime);
         }
 
@@ -203,7 +209,7 @@ namespace Trix
                 System.Diagnostics.Trace.WriteLine(1 / gameTime.ElapsedGameTime.TotalSeconds + ":" + vertexCount);
             }
 
-            _chunkManager.Draw(gameTime, basicEffect, wireFrameEnabled ? wireFrame : null, worldMatrix); 
+            _chunkManager.Draw(gameTime, basicEffect, wireFrameEnabled ? wireFrame : null, camera); 
             base.Draw(gameTime);
         }
     }

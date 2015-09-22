@@ -209,7 +209,7 @@ public class ChunkManager
         return volume[wx - (cx * CHUNK_SIZE), wy - (cy * CHUNK_SIZE), wz - (cz * CHUNK_SIZE)];
     }
 
-    public void Draw(GameTime gameTime, BasicEffect opaque, BasicEffect wireFrame, Matrix worldMatrix)
+    public void Draw(GameTime gameTime, BasicEffect opaque, BasicEffect wireFrame, Camera camera)
     {
 
         if (wireFrame != null)
@@ -1181,7 +1181,7 @@ public class SurfaceExtractor
             negArea[2, v] = 1;
             negArea[3, u] = 1;
 
-            for (x[d] = -1; x[d] < dims[d] - 1; )
+            for (x[d] = 0; x[d] < dims[d]; )
             {
                 //Compute mask
                 //TODO: Test if the AOMASK should be created outside of the block mask
