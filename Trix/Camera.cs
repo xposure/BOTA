@@ -17,6 +17,9 @@ namespace Trix
         private Vector3 angle = new Vector3();
         private float moveSpeed = 25f;
         private float turnSpeed = 25f;
+        private BoundingFrustum frustum = new BoundingFrustum(Matrix.Identity);
+
+        public BoundingFrustum Frustum { get { return frustum; } }
 
         public Matrix Projection
         {
@@ -87,6 +90,8 @@ namespace Trix
             view *= Matrix.CreateRotationZ(angle.Z);
             view *= Matrix.CreateRotationY(angle.Y);
             view *= Matrix.CreateRotationX(angle.X);
+
+            frustum.Matrix = View * Projection;
         }
     }
 }

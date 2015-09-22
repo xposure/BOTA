@@ -20,6 +20,73 @@ using Trix;
  *      Breadth First Search using flood fill to determine what should be rendered
  */
 
+public struct VertexPositionColorNormal : IVertexType
+{
+    public Vector3 Position;
+    public Color Color;
+    public Vector3 Normal;
+    public static readonly VertexDeclaration VertexDeclaration;
+
+    public VertexPositionColorNormal(Vector3 position, Color color, Vector3 normal)
+    {
+        this.Position = position;
+        this.Color = color;
+        this.Normal = normal;
+    }
+
+    static VertexPositionColorNormal()
+    {
+        VertexElement[] elements = new VertexElement[] { 
+            new VertexElement(0, VertexElementFormat.Vector3, VertexElementUsage.Position, 0), 
+            new VertexElement(12, VertexElementFormat.Color, VertexElementUsage.Color, 0),
+            new VertexElement(16, VertexElementFormat.Vector3, VertexElementUsage.Normal, 0) 
+        };
+
+        VertexDeclaration declaration = new VertexDeclaration(elements);
+        VertexDeclaration = declaration;
+    }
+
+    VertexDeclaration IVertexType.VertexDeclaration
+    {
+        get
+        {
+            return VertexDeclaration;
+        }
+    }
+
+    public static bool operator !=(VertexPositionColorNormal left, VertexPositionColorNormal right)
+    {
+        return !(left == right);
+    }
+
+    public static bool operator ==(VertexPositionColorNormal left, VertexPositionColorNormal right)
+    {
+        return left.Color == right.Color && left.Position == right.Position && left.Normal == right.Normal;
+    }
+
+    public override bool Equals(object obj)
+    {
+        if (obj == null)
+        {
+            return false;
+        }
+        if (obj.GetType() != base.GetType())
+        {
+            return false;
+        }
+        return (this == ((VertexPositionColorNormal)obj));
+    }
+
+    public override int GetHashCode()
+    {
+        return this.Color.GetHashCode() ^ this.Position.GetHashCode() ^ this.Normal.GetHashCode();
+    }
+
+    public override string ToString()
+    {
+        return string.Format("{{Position:{0} Color:{1} Normal:{2}}}", new object[] { this.Position, this.Color, this.Normal });
+    }
+}
 
 public class Chunk
 {
@@ -31,7 +98,7 @@ public class Chunk
      * 
      */
 
-
+    private BoundingBox aabb;
     private int x, y, z;
     private GraphicsDevice device;
     private Volume volume;
@@ -42,12 +109,14 @@ public class Chunk
     public int WorldY { get { return y * ChunkManager.CHUNK_SIZE; } }
     public int WorldZ { get { return z * ChunkManager.CHUNK_SIZE; } }
     public Vector3 WorldPosition { get { return Position * ChunkManager.CHUNK_SIZE; } }
+    public BoundingBox AABB { get { return aabb; } }
 
     public Chunk(int x, int y, int z, GraphicsDevice device)
     {
         this.x = x;
         this.y = y;
         this.z = z;
+        this.aabb = new BoundingBox(WorldPosition, WorldPosition + Vector3.One * ChunkManager.CHUNK_SIZE);
         this.device = device;
     }
 
@@ -66,12 +135,17 @@ public class Chunk
 
     public void UpdateMesh(ChunkManager cm)
     {
-        SurfaceExtractor.GenerateMesh2(cm, device, volume, centered: true);
+        SurfaceExtractor.GenerateMesh2(cm, device, volume, centered: false);
     }
 
-    public void Draw()
+    public bool Draw(Camera camera)
     {
-        this.volume.opaqueMesh.Draw();
+        if (camera.Frustum.Intersects(this.aabb))
+        {
+            this.volume.opaqueMesh.Draw();
+            return true;
+        }
+        return false;
     }
 
     public uint this[int x, int y, int z]
@@ -92,14 +166,22 @@ public class Chunk
 public class ChunkColumn
 {
     //private byte[,] _sunlightDepth = new byte[ChunkManager.CHUNK_SIZE, ChunkManager.CHUNK_SIZE];
+    private BoundingBox aabb;
     private Chunk[] chunks = new Chunk[ChunkManager.CHUNKS_PER_COLUMN];
     private int x, z;
     private GraphicsDevice device;
+
+    public int X { get { return x; } }
+    public int Z { get { return z; } }
+    public Vector3 WorldPosition { get { return new Vector3(x * ChunkManager.CHUNK_SIZE, 0, z * ChunkManager.CHUNK_SIZE); } }
+    public BoundingBox AABB { get { return aabb; } }
 
     public ChunkColumn(int x, int z, GraphicsDevice device)
     {
         this.x = x;
         this.z = z;
+        this.aabb = new BoundingBox(WorldPosition, WorldPosition + 
+            new Vector3(ChunkManager.CHUNK_SIZE, ChunkManager.CHUNK_HEIGHT, ChunkManager.CHUNK_SIZE));
         this.device = device;
 
         for (var y = 0; y < chunks.Length; y++)
@@ -209,9 +291,10 @@ public class ChunkManager
         return volume[wx - (cx * CHUNK_SIZE), wy - (cy * CHUNK_SIZE), wz - (cz * CHUNK_SIZE)];
     }
 
-    public void Draw(GameTime gameTime, BasicEffect opaque, BasicEffect wireFrame, Camera camera)
+    public int Draw(GameTime gameTime, BasicEffect opaque, BasicEffect wireFrame, Camera camera)
     {
 
+        var culled = 0;
         if (wireFrame != null)
         {
             var rast = new RasterizerState();
@@ -239,7 +322,7 @@ public class ChunkManager
                             var chunk = column[y];
                             wireFrame.World = Matrix.CreateTranslation(chunk.WorldPosition);// *Matrix.CreateRotationZ((float)gameTime.TotalGameTime.TotalSeconds / 2);
                             pass.Apply();
-                            chunk.Draw();
+                            chunk.Draw(camera);
                         }
                     }
                 }
@@ -252,7 +335,6 @@ public class ChunkManager
 
             //var depth = DepthStencilState.Default;
             //device.DepthStencilState = depth;
-
             foreach (EffectPass pass in opaque.CurrentTechnique.Passes)
             {
                 for (var x = 0; x < GRID_SIZE; x++)
@@ -260,18 +342,25 @@ public class ChunkManager
                     for (var z = 0; z < GRID_SIZE; z++)
                     {
                         var column = grid[x, z];
-                        for (var y = 0; y < CHUNKS_PER_COLUMN; y++)
+                        if (camera.Frustum.Intersects(column.AABB))
                         {
-                            //basicEffect.World = worldMatrix * Matrix.CreateRotationY((float)gameTime.TotalGameTime.TotalSeconds / 2);
-                            var chunk = column[y];
-                            opaque.World = Matrix.CreateTranslation(chunk.WorldPosition);// *Matrix.CreateRotationZ((float)gameTime.TotalGameTime.TotalSeconds / 2);
-                            pass.Apply();
-                            chunk.Draw();
+                            for (var y = 0; y < CHUNKS_PER_COLUMN; y++)
+                            {
+                                //basicEffect.World = worldMatrix * Matrix.CreateRotationY((float)gameTime.TotalGameTime.TotalSeconds / 2);
+                                var chunk = column[y];
+                                opaque.World = Matrix.CreateTranslation(chunk.WorldPosition);// *Matrix.CreateRotationZ((float)gameTime.TotalGameTime.TotalSeconds / 2);
+                                pass.Apply();
+                                if (!chunk.Draw(camera))
+                                    culled++;
+                            }
                         }
+                        else
+                            culled += ChunkManager.CHUNKS_PER_COLUMN;
                     }
                 }
             }
         }
+        return culled;
     }
 }
 
@@ -398,8 +487,8 @@ public class Volume
     public GraphicsDevice _device;
     public ChunkManager cm;
 
-    public DynamicMesh<VertexPositionColor> opaqueMesh;
-    public DynamicMesh<VertexPositionColor> waterMesh;
+    public DynamicMesh<VertexPositionColorNormal> opaqueMesh;
+    public DynamicMesh<VertexPositionColorNormal> waterMesh;
     public Dimensions dims;
     public int X, Y, Z;
 
@@ -446,12 +535,12 @@ public class Volume
     public void PrepareMesh(GraphicsDevice device)
     {
         if (opaqueMesh == null)
-            opaqueMesh = new DynamicMesh<VertexPositionColor>(device);
+            opaqueMesh = new DynamicMesh<VertexPositionColorNormal>(device);
         else
             opaqueMesh.Clear();
 
         if (waterMesh == null)
-            waterMesh = new DynamicMesh<VertexPositionColor>(device);
+            waterMesh = new DynamicMesh<VertexPositionColorNormal>(device);
         else
             waterMesh.Clear();
     }
@@ -611,7 +700,7 @@ public class SurfaceExtractor
         //normals.Clear();
         //colors.Clear();
 
-        VertexPositionColor[] vertices = new VertexPositionColor[4];
+        VertexPositionColorNormal[] vertices = new VertexPositionColorNormal[4];
 
         var dims = volume.dims;
 
@@ -794,7 +883,7 @@ public class SurfaceExtractor
                             x[u] = i; x[v] = j;
                             int[] du = { 0, 0, 0 };
                             int[] dv = { 0, 0, 0 };
-
+                            var normal = new Vector3(q[0], q[1], q[2]);
                             if (!maskLayout[n].BackFace)
                             {
                                 dv[v] = h;
@@ -804,6 +893,7 @@ public class SurfaceExtractor
                             {
                                 du[v] = h;
                                 dv[u] = w;
+                                normal = -normal;
                             }
 
                             var flip = maskLayout[n].FlipFace;
@@ -833,7 +923,7 @@ public class SurfaceExtractor
                                 //colors.Add(color);
                                 ////colors.Add(new Color(1,0,1,1));
 
-
+                                vertices[o].Normal = normal;
                                 vertices[o].Color = new Color(cr * ao, cg * ao, cb * ao);
                                 //uvs.Add(new Vector2(ao, 0));
 
@@ -1134,7 +1224,7 @@ public class SurfaceExtractor
         //normals.Clear();
         //colors.Clear();
 
-        VertexPositionColor[] vertices = new VertexPositionColor[4];
+        VertexPositionColorNormal[] vertices = new VertexPositionColorNormal[4];
 
         var dims = volume.dims;
 
@@ -1315,6 +1405,8 @@ public class SurfaceExtractor
                             x[u] = i; x[v] = j;
                             int[] du = { 0, 0, 0 };
                             int[] dv = { 0, 0, 0 };
+                            
+                            var normal = new Vector3(q[0], q[1], q[2]);
 
                             if (!maskLayout[n].BackFace)
                             {
@@ -1325,6 +1417,7 @@ public class SurfaceExtractor
                             {
                                 du[v] = h;
                                 dv[u] = w;
+                                normal = -normal;
                             }
 
                             var flip = maskLayout[n].FlipFace;
@@ -1355,6 +1448,7 @@ public class SurfaceExtractor
                                 ////colors.Add(new Color(1,0,1,1));
 
                                 vertices[o].Color = new Color(cr * ao, cg * ao, cb * ao);
+                                vertices[o].Normal = normal;
                                 //colors.Add(new Color(cr, cg, cb));
                                 //uvs.Add(new Vector2(ao, 0));
                                 //colors.Add(ugh[maskLayout[n].GetOcclusion(o)]);
@@ -1367,6 +1461,7 @@ public class SurfaceExtractor
                             //{
                             //    uvs.Add(new Vector2(Pack(aouvs[0], aouvs[1]), Pack(aouvs[2], aouvs[3])));
                             //}
+
 
                             //var vertex_count = vertices.Count;
                             if (centered)

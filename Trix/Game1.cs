@@ -5,6 +5,9 @@ using Microsoft.Xna.Framework.Input;
 
 namespace Trix
 {
+    //https://www.giawa.com
+
+
     /// <summary>
     /// This is the main type for your game.
     /// </summary>
@@ -82,7 +85,6 @@ namespace Trix
             basicEffect.Alpha = 1.0f;
             basicEffect.VertexColorEnabled = true;
 
-
             wireFrame = new BasicEffect(graphics.GraphicsDevice);
 
             wireFrame.World = Matrix.Identity;
@@ -96,38 +98,41 @@ namespace Trix
             wireFrame.SpecularPower = 5.0f;
             wireFrame.Alpha = 1.0f;
             wireFrame.VertexColorEnabled = false;
+            wireFrame.LightingEnabled = true;
 
-            //basicEffect.LightingEnabled = true;
-            //if (basicEffect.LightingEnabled)
-            //{
-            //    basicEffect.DirectionalLight0.Enabled = true; // enable each light individually
-            //    if (basicEffect.DirectionalLight0.Enabled)
-            //    {
-            //        // x direction
-            //        basicEffect.DirectionalLight0.DiffuseColor = new Vector3(1, 0, 0); // range is 0 to 1
-            //        basicEffect.DirectionalLight0.Direction = Vector3.Normalize(new Vector3(-1, 0, 0));
-            //        // points from the light to the origin of the scene
-            //        basicEffect.DirectionalLight0.SpecularColor = Vector3.One;
-            //    }
+            basicEffect.LightingEnabled = true;
+            if (basicEffect.LightingEnabled)
+            {
+                basicEffect.DirectionalLight0.Enabled = true; // enable each light individually
+                if (basicEffect.DirectionalLight0.Enabled)
+                {
+                    // x direction
+                    basicEffect.AmbientLightColor = new Vector3(1, 1, 1);
+                    basicEffect.DirectionalLight0.DiffuseColor = new Vector3(0.1f, 0.1f, 0.1f); // range is 0 to 1
+                    basicEffect.DirectionalLight0.Direction = Vector3.Normalize(new Vector3(-0.25f, -1, -0.5f));
+                    // points from the light to the origin of the scene
+                    basicEffect.DirectionalLight0.SpecularColor = Vector3.Zero;
+                    //basicEffect.DirectionalLight0.SpecularColor = Vector3.One;
+                }
 
-            //    basicEffect.DirectionalLight1.Enabled = true;
-            //    if (basicEffect.DirectionalLight1.Enabled)
-            //    {
-            //        // y direction
-            //        basicEffect.DirectionalLight1.DiffuseColor = new Vector3(0, 0.75f, 0);
-            //        basicEffect.DirectionalLight1.Direction = Vector3.Normalize(new Vector3(0, -1, 0));
-            //        basicEffect.DirectionalLight1.SpecularColor = Vector3.One;
-            //    }
+                //basicEffect.DirectionalLight1.Enabled = true;
+                //if (basicEffect.DirectionalLight1.Enabled)
+                //{
+                //    // y direction
+                //    basicEffect.DirectionalLight1.DiffuseColor = new Vector3(0, 0.75f, 0);
+                //    basicEffect.DirectionalLight1.Direction = Vector3.Normalize(new Vector3(0, -1, 0));
+                //    basicEffect.DirectionalLight1.SpecularColor = Vector3.One;
+                //}
 
-            //    basicEffect.DirectionalLight2.Enabled = true;
-            //    if (basicEffect.DirectionalLight2.Enabled)
-            //    {
-            //        // z direction
-            //        basicEffect.DirectionalLight2.DiffuseColor = new Vector3(0, 0, 0.5f);
-            //        basicEffect.DirectionalLight2.Direction = Vector3.Normalize(new Vector3(0, 0, -1));
-            //        basicEffect.DirectionalLight2.SpecularColor = Vector3.One;
-            //    }
-            //}
+                //basicEffect.DirectionalLight2.Enabled = true;
+                //if (basicEffect.DirectionalLight2.Enabled)
+                //{
+                //    // z direction
+                //    basicEffect.DirectionalLight2.DiffuseColor = new Vector3(0, 0, 0.5f);
+                //    basicEffect.DirectionalLight2.Direction = Vector3.Normalize(new Vector3(0, 0, -1));
+                //    basicEffect.DirectionalLight2.SpecularColor = Vector3.One;
+                //}
+            }
 
             mouseState = Mouse.GetState();
             keyboardState = Keyboard.GetState();
@@ -156,19 +161,46 @@ namespace Trix
             // TODO: Unload any non ContentManager content here
         }
 
-        
+        bool isRunning = true;
+        float light;
+
+        protected override void OnExiting(object sender, System.EventArgs args)
+        {
+            isRunning = false;
+            base.OnExiting(sender, args);
+        }
+
         protected override void Update(GameTime gameTime)
         {
             var newKeyboardState = Keyboard.GetState();
 
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || newKeyboardState.IsKeyDown(Keys.Escape))
                 Exit();
-            else
+            else if(isRunning && this.Window != null)
             {
                 if (newKeyboardState.IsKeyUp(Keys.F) && keyboardState.IsKeyDown(Keys.F))
                     wireFrameEnabled = !wireFrameEnabled;
                 keyboardState = newKeyboardState;
 
+                if (newKeyboardState.IsKeyDown(Keys.L)) {
+                    if (basicEffect.LightingEnabled)
+                    {
+                        basicEffect.DirectionalLight0.Enabled = true; // enable each light individually
+                        if (basicEffect.DirectionalLight0.Enabled)
+                        {
+                            light +=  (float)gameTime.ElapsedGameTime.TotalSeconds;
+                            if (light > 1f)
+                                light = 0f;
+
+                            basicEffect.AmbientLightColor = new Vector3(1, 1, 1);
+                            basicEffect.DirectionalLight0.DiffuseColor = new Vector3(0.1f, 0.1f, 0.1f); // range is 0 to 1
+                            basicEffect.DirectionalLight0.Direction = Vector3.Normalize(new Vector3(-0.25f, -1, -0.5f));
+                            // points from the light to the origin of the scene
+                            basicEffect.DirectionalLight0.SpecularColor = Vector3.Zero;
+                            //basicEffect.DirectionalLight0.SpecularColor = Vector3.One;
+                        }
+                    }
+                }
                 // TODO: Add your update logic here
 
                 var newMouseState = Mouse.GetState();
@@ -209,7 +241,8 @@ namespace Trix
                 System.Diagnostics.Trace.WriteLine(1 / gameTime.ElapsedGameTime.TotalSeconds + ":" + vertexCount);
             }
 
-            _chunkManager.Draw(gameTime, basicEffect, wireFrameEnabled ? wireFrame : null, camera); 
+            var culled = _chunkManager.Draw(gameTime, basicEffect, wireFrameEnabled ? wireFrame : null, camera);
+            System.Diagnostics.Trace.WriteLine(culled);
             base.Draw(gameTime);
         }
     }
