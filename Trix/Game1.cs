@@ -84,7 +84,10 @@ namespace Trix
             basicEffect.SpecularPower = 5.0f;
             basicEffect.Alpha = 1.0f;
             basicEffect.VertexColorEnabled = true;
-
+            //basicEffect.FogEnabled = true;
+            //basicEffect.FogColor = new Vector3(0, 0, 0);
+            //basicEffect.FogStart = 10;
+            //basicEffect.FogEnd = 100;
             wireFrame = new BasicEffect(graphics.GraphicsDevice);
 
             wireFrame.World = Matrix.Identity;
