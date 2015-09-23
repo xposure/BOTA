@@ -51,7 +51,6 @@
     <Compile Include="Rendering\DynamicMesh.cs" />
     <Compile Include="Rendering\SurfaceExtractor.cs" />
     <Compile Include="Rendering\VertexPositionColorNormal.cs" />
-    <Compile Include="SurfaceExtractor.cs" />
     <Compile Include="Voxels\Chunk.cs" />
     <Compile Include="Voxels\ChunkColumn.cs" />
     <Compile Include="Voxels\ChunkManager.cs" />
