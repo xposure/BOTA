@@ -36,7 +36,7 @@ namespace Trix.Voxels
             {
                 for (var z = 0; z < Constants.GRID_SIZE; z++)
                 {
-                    grid[x, z] = new ChunkColumn(x, z, device);
+                    grid[x, z] = new ChunkColumn(this, x, z, device);
                     grid[x, z].Init(this);
                 }
             }

@@ -9,21 +9,18 @@ namespace Trix.Voxels
 {
     public class VoxelVolume
     {
-        public GraphicsDevice _device;
+        protected GraphicsDevice _device;
 
         public DynamicMesh<VertexPositionColorNormal> opaqueMesh;
         public DynamicMesh<VertexPositionColorNormal> waterMesh;
         public Dimensions dims;
-        public int X, Y, Z;
+        //public int X, Y, Z;
 
         private uint[] data;
-        public VoxelVolume(GraphicsDevice device, int x, int y, int z, uint[] data, Dimensions dims)
+        public VoxelVolume(GraphicsDevice device, Dimensions dims)
         {
             _device = device;
-            X = x;
-            Y = y;
-            Z = z;
-            this.data = data;
+            this.data = new uint[dims[0] * dims[1] * dims[2]];
             this.dims = dims;
         }
 

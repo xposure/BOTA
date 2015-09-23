@@ -20,7 +20,7 @@ namespace Trix.Voxels
         public Vector3 WorldPosition { get { return new Vector3(x * Constants.CHUNK_SIZE, 0, z * Constants.CHUNK_SIZE); } }
         public BoundingBox AABB { get { return aabb; } }
 
-        public ChunkColumn(int x, int z, GraphicsDevice device)
+        public ChunkColumn(ChunkManager cm, int x, int z, GraphicsDevice device)
         {
             this.x = x;
             this.z = z;
@@ -29,7 +29,7 @@ namespace Trix.Voxels
             this.device = device;
 
             for (var y = 0; y < chunks.Length; y++)
-                chunks[y] = new Chunk(x, y, z, device);
+                chunks[y] = new Chunk(cm, x, y, z, device);
         }
 
         public void Init(ChunkManager cm)

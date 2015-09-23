@@ -1,55 +1,55 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿//using System;
+//using System.Collections.Generic;
+//using System.Linq;
+//using System.Text;
 
-namespace Trix.Voxels
-{
-//public class World
+//namespace Trix.Voxels
 //{
-//    private Dictionary<uint, Chunk> chunks = new Dictionary<uint, Chunk>();
-
-//    private int width, depth, height;
-
-//    public int Width { get { return width; } }
-//    public int Depth { get { return depth; } }
-//    public int Height { get { return height; } }
-
-//    public World(int width, int height, int depth)
+//    public class World
 //    {
-//        this.width = width;
-//        this.height = height;
-//        this.depth = depth;
-//    }
+//        private Dictionary<uint, Chunk> chunks = new Dictionary<uint, Chunk>();
 
-//    public void Generate()
-//    {
-//        layers = new Layer[depth];
-//        for (var i = 0; i < depth; ++i)
+//        private int width, depth, height;
+
+//        public int Width { get { return width; } }
+//        public int Depth { get { return depth; } }
+//        public int Height { get { return height; } }
+
+//        public World(int width, int height, int depth)
 //        {
-//            layers[i] = new Layer();
+//            this.width = width;
+//            this.height = height;
+//            this.depth = depth;
 //        }
-//    }
 
-//    public Voxel GetVoxel(Position p)
-//    {
-//        return new Voxel();
-//    }
+//        public void Generate()
+//        {
+//            layers = new Layer[depth];
+//            for (var i = 0; i < depth; ++i)
+//            {
+//                layers[i] = new Layer();
+//            }
+//        }
 
-//    public Chunk GetChunk(uint encodedId)
-//    {
-//        Chunk chunk = null;
-//        if (!chunks.TryGetValue(encodedId, out chunk))
-//            return Chunk.Empty;
+//        public Voxel GetVoxel(Position p)
+//        {
+//            return new Voxel();
+//        }
 
-//        return chunk;
-//    }
+//        public Chunk GetChunk(uint encodedId)
+//        {
+//            Chunk chunk = null;
+//            if (!chunks.TryGetValue(encodedId, out chunk))
+//                return Chunk.Empty;
 
-//    public Layer GetLayer(int depth)
-//    {
-//        System.Diagnostics.Debug.Assert(depth >= 0 && depth < this.depth);
-//        return layers[depth];
+//            return chunk;
+//        }
+
+//        public Layer GetLayer(int depth)
+//        {
+//            System.Diagnostics.Debug.Assert(depth >= 0 && depth < this.depth);
+//            return layers[depth];
+//        }
+
 //    }
-    
 //}
-}

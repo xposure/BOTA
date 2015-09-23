@@ -8,7 +8,7 @@ using Trix.Rendering;
 
 namespace Trix.Voxels
 {
-    public class Chunk
+    public class Chunk : VoxelVolume
     {
         /*
          * Questions
@@ -17,11 +17,9 @@ namespace Trix.Voxels
          *  - Do we have 
          * 
          */
-
+        private ChunkManager cm;
         private BoundingBox aabb;
         private int x, y, z;
-        private GraphicsDevice device;
-        private VoxelVolume volume;
         public Vector3 Position { get { return new Vector3(x, y, z); } }
 
         public int WorldX { get { return x * Constants.CHUNK_SIZE; } }
@@ -30,13 +28,14 @@ namespace Trix.Voxels
         public Vector3 WorldPosition { get { return Position * Constants.CHUNK_SIZE; } }
         public BoundingBox AABB { get { return aabb; } }
 
-        public Chunk(int x, int y, int z, GraphicsDevice device)
+        public Chunk(ChunkManager cm, int x, int y, int z, GraphicsDevice device)
+            : base(device, new Dimensions(new int[] { Constants.CHUNK_SIZE, Constants.CHUNK_SIZE, Constants.CHUNK_SIZE }))
         {
+            this.cm = cm;
             this.x = x;
             this.y = y;
             this.z = z;
             this.aabb = new BoundingBox(WorldPosition, WorldPosition + Vector3.One * Constants.CHUNK_SIZE);
-            this.device = device;
         }
 
         public void Generate(ChunkManager cm)
@@ -47,30 +46,34 @@ namespace Trix.Voxels
 
             //int[] d = { h[0] - l[0], h[1] - l[1], h[2] - l[2] };
             int[] d = { Constants.CHUNK_SIZE, Constants.CHUNK_SIZE, Constants.CHUNK_SIZE };
-            uint[] v = new uint[d[0] * d[1] * d[2]];
-            volume = new VoxelVolume(device, x, y, z, v, new Dimensions(d));
-            cm.WorldGenerator.GetChunk(x, z, y, volume);
+            cm.WorldGenerator.GetChunk(x, z, y, this);
         }
 
         public void UpdateMesh(ChunkManager cm)
         {
-            SurfaceExtractor.ExtractMesh(volume);
+            SurfaceExtractor.ExtractMesh(this);
+        }
+
+        public override uint GetRelativeVoxel(int x, int y, int z)
+        {
+            return cm.GetVoxelByRelative(this.x, this.y, this.z, x, y, z);
+            //return base.GetRelativeVoxel(x, y, z);
         }
 
         public bool Draw(Camera camera)
         {
             if (camera.Frustum.Intersects(this.aabb))
             {
-                this.volume.opaqueMesh.Draw();
+                this.opaqueMesh.Draw();
                 return true;
             }
             return false;
         }
 
-        public uint this[int x, int y, int z]
-        {
-            get { return volume[x, y, z]; }
-            set { volume[x, y, z] = value; }
-        }
+        //public uint this[int x, int y, int z]
+        //{
+        //    get { return volume[x, y, z]; }
+        //    set { volume[x, y, z] = value; }
+        //}
     }
 }

@@ -72,7 +72,7 @@ namespace Trix.Rendering
             var f = new Func<int, int, int, uint>((i, j, k) =>
             {
                 if (i < 0 || j < 0 || k < 0 || i >= dims[0] || j >= dims[1] || k >= dims[2])
-                    volume.GetRelativeVoxel(i, j, k);
+                    return volume.GetRelativeVoxel(i, j, k);
                     //return cm.GetVoxelByRelative(volume.X, volume.Y, volume.Z, i, j, k);
 
                 var r = volume[i + dims[0] * (j + dims[1] * k)];
@@ -260,7 +260,7 @@ namespace Trix.Rendering
                                 var cb = (c & 0xff) / 255f;
 
                                 var ao = 0f;
-                                var AOcurve = new float[] { 0.75f, 0.85f, 0.95f, 1.0f };
+                                var AOcurve = new float[] { 0.45f, 0.65f, 0.85f, 1.0f };
                                 for (var o = 0; o < 4; ++o)
                                 {
                                     var pao = disableAO ? 1f : AOcurve[maskLayout[n].GetOcclusion(o)];
