@@ -68,7 +68,7 @@ namespace Trix
 
             bool addCaves = false; // (bool)m.GetOption("DefaultGenCaves");
             bool addCaveLava = false; // (bool)m.GetOption("DefaultGenLavaCaves");
-            int ChunkSize = ChunkManager.CHUNK_SIZE;// m.GetChunkSize();
+            int ChunkSize = Constants.CHUNK_SIZE;// m.GetChunkSize();
             x *= ChunkSize;
             y *= ChunkSize;
             z *= ChunkSize;

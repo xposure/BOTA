@@ -11,13 +11,13 @@ namespace Trix.Voxels
     {
         //private byte[,] _sunlightDepth = new byte[ChunkManager.CHUNK_SIZE, ChunkManager.CHUNK_SIZE];
         private BoundingBox aabb;
-        private Chunk[] chunks = new Chunk[ChunkManager.CHUNKS_PER_COLUMN];
+        private Chunk[] chunks = new Chunk[Constants.CHUNKS_PER_COLUMN];
         private int x, z;
         private GraphicsDevice device;
 
         public int X { get { return x; } }
         public int Z { get { return z; } }
-        public Vector3 WorldPosition { get { return new Vector3(x * ChunkManager.CHUNK_SIZE, 0, z * ChunkManager.CHUNK_SIZE); } }
+        public Vector3 WorldPosition { get { return new Vector3(x * Constants.CHUNK_SIZE, 0, z * Constants.CHUNK_SIZE); } }
         public BoundingBox AABB { get { return aabb; } }
 
         public ChunkColumn(int x, int z, GraphicsDevice device)
@@ -25,7 +25,7 @@ namespace Trix.Voxels
             this.x = x;
             this.z = z;
             this.aabb = new BoundingBox(WorldPosition, WorldPosition +
-                new Vector3(ChunkManager.CHUNK_SIZE, ChunkManager.CHUNK_HEIGHT, ChunkManager.CHUNK_SIZE));
+                new Vector3(Constants.CHUNK_SIZE, Constants.CHUNK_HEIGHT, Constants.CHUNK_SIZE));
             this.device = device;
 
             for (var y = 0; y < chunks.Length; y++)

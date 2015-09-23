@@ -24,10 +24,10 @@ namespace Trix.Voxels
         private VoxelVolume volume;
         public Vector3 Position { get { return new Vector3(x, y, z); } }
 
-        public int WorldX { get { return x * ChunkManager.CHUNK_SIZE; } }
-        public int WorldY { get { return y * ChunkManager.CHUNK_SIZE; } }
-        public int WorldZ { get { return z * ChunkManager.CHUNK_SIZE; } }
-        public Vector3 WorldPosition { get { return Position * ChunkManager.CHUNK_SIZE; } }
+        public int WorldX { get { return x * Constants.CHUNK_SIZE; } }
+        public int WorldY { get { return y * Constants.CHUNK_SIZE; } }
+        public int WorldZ { get { return z * Constants.CHUNK_SIZE; } }
+        public Vector3 WorldPosition { get { return Position * Constants.CHUNK_SIZE; } }
         public BoundingBox AABB { get { return aabb; } }
 
         public Chunk(int x, int y, int z, GraphicsDevice device)
@@ -35,18 +35,18 @@ namespace Trix.Voxels
             this.x = x;
             this.y = y;
             this.z = z;
-            this.aabb = new BoundingBox(WorldPosition, WorldPosition + Vector3.One * ChunkManager.CHUNK_SIZE);
+            this.aabb = new BoundingBox(WorldPosition, WorldPosition + Vector3.One * Constants.CHUNK_SIZE);
             this.device = device;
         }
 
         public void Generate(ChunkManager cm)
         {
-            var h = new int[] { 0, ChunkManager.CHUNK_SIZE };
-            var w = new int[] { 0, ChunkManager.CHUNK_SIZE };
-            var l = new int[] { 0, ChunkManager.CHUNK_SIZE };
+            var h = new int[] { 0, Constants.CHUNK_SIZE };
+            var w = new int[] { 0, Constants.CHUNK_SIZE };
+            var l = new int[] { 0, Constants.CHUNK_SIZE };
 
             //int[] d = { h[0] - l[0], h[1] - l[1], h[2] - l[2] };
-            int[] d = { ChunkManager.CHUNK_SIZE, ChunkManager.CHUNK_SIZE, ChunkManager.CHUNK_SIZE };
+            int[] d = { Constants.CHUNK_SIZE, Constants.CHUNK_SIZE, Constants.CHUNK_SIZE };
             uint[] v = new uint[d[0] * d[1] * d[2]];
             volume = new VoxelVolume(device, x, y, z, v, new Dimensions(d));
             cm.WorldGenerator.GetChunk(x, z, y, volume);

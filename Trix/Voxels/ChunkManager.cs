@@ -10,17 +10,9 @@ namespace Trix.Voxels
 {
     public class ChunkManager
     {
-        private const int GRID_SIZE = 8;
-        public const int CHUNK_SIZE = 16;
-        public const int CHUNK_SIZE2 = CHUNK_SIZE * CHUNK_SIZE;
-        public const int CHUNK_SIZE3 = CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE;
-        public const int CHUNK_HEIGHT = 128;
-        public const int CHUNKS_PER_COLUMN = CHUNK_HEIGHT / CHUNK_SIZE;
-
-        private const int worldSize = GRID_SIZE * CHUNK_SIZE;
 
         private GraphicsDevice device;
-        private ChunkColumn[,] grid = new ChunkColumn[GRID_SIZE, GRID_SIZE];
+        private ChunkColumn[,] grid = new ChunkColumn[Constants.GRID_SIZE, Constants.GRID_SIZE];
         private DefaultWorldGenerator worldGen = new DefaultWorldGenerator();
 
         public DefaultWorldGenerator WorldGenerator { get { return worldGen; } }
@@ -40,9 +32,9 @@ namespace Trix.Voxels
             var surfaceTimer = new Stopwatch();
 
             terrainTimer.Start();
-            for (var x = 0; x < GRID_SIZE; x++)
+            for (var x = 0; x < Constants.GRID_SIZE; x++)
             {
-                for (var z = 0; z < GRID_SIZE; z++)
+                for (var z = 0; z < Constants.GRID_SIZE; z++)
                 {
                     grid[x, z] = new ChunkColumn(x, z, device);
                     grid[x, z].Init(this);
@@ -52,8 +44,8 @@ namespace Trix.Voxels
 
 
             surfaceTimer.Start();
-            for (var x = 0; x < GRID_SIZE; x++)
-                for (var z = 0; z < GRID_SIZE; z++)
+            for (var x = 0; x < Constants.GRID_SIZE; x++)
+                for (var z = 0; z < Constants.GRID_SIZE; z++)
                     grid[x, z].UpdateMesh(this);
 
             surfaceTimer.Stop();
@@ -66,22 +58,22 @@ namespace Trix.Voxels
 
         public uint GetVoxelByRelative(int cx, int cy, int cz, int x, int y, int z)
         {
-            return GetVoxelByWorld(cx * CHUNK_SIZE + x, cy * CHUNK_SIZE + y, cz * CHUNK_SIZE + z);
+            return GetVoxelByWorld(cx * Constants.CHUNK_SIZE + x, cy * Constants.CHUNK_SIZE + y, cz * Constants.CHUNK_SIZE + z);
         }
 
         public uint GetVoxelByWorld(int wx, int wy, int wz)
         {
-            if (wx < 0 || wy < 0 || wz < 0 || wx >= worldSize || wy >= CHUNK_HEIGHT || wz >= worldSize)
+            if (wx < 0 || wy < 0 || wz < 0 || wx >= Constants.worldSize || wy >= Constants.CHUNK_HEIGHT || wz >= Constants.worldSize)
                 return 0;
 
-            var cx = wx / CHUNK_SIZE;
-            var cz = wz / CHUNK_SIZE;
-            var cy = wy / CHUNK_SIZE;
+            var cx = wx / Constants.CHUNK_SIZE;
+            var cz = wz / Constants.CHUNK_SIZE;
+            var cy = wy / Constants.CHUNK_SIZE;
 
             var column = grid[cx, cz];
             var volume = column[cy];
 
-            return volume[wx - (cx * CHUNK_SIZE), wy - (cy * CHUNK_SIZE), wz - (cz * CHUNK_SIZE)];
+            return volume[wx - (cx * Constants.CHUNK_SIZE), wy - (cy * Constants.CHUNK_SIZE), wz - (cz * Constants.CHUNK_SIZE)];
         }
 
         public int Draw(GameTime gameTime, BasicEffect opaque, BasicEffect wireFrame, Camera camera)
@@ -104,12 +96,12 @@ namespace Trix.Voxels
                 // TODO: Add your drawing code here
                 foreach (EffectPass pass in wireFrame.CurrentTechnique.Passes)
                 {
-                    for (var x = 0; x < GRID_SIZE; x++)
+                    for (var x = 0; x < Constants.GRID_SIZE; x++)
                     {
-                        for (var z = 0; z < GRID_SIZE; z++)
+                        for (var z = 0; z < Constants.GRID_SIZE; z++)
                         {
                             var column = grid[x, z];
-                            for (var y = 0; y < CHUNKS_PER_COLUMN; y++)
+                            for (var y = 0; y < Constants.CHUNKS_PER_COLUMN; y++)
                             {
                                 //basicEffect.World = worldMatrix * Matrix.CreateRotationY((float)gameTime.TotalGameTime.TotalSeconds / 2);
                                 var chunk = column[y];
@@ -130,14 +122,14 @@ namespace Trix.Voxels
                 //device.DepthStencilState = depth;
                 foreach (EffectPass pass in opaque.CurrentTechnique.Passes)
                 {
-                    for (var x = 0; x < GRID_SIZE; x++)
+                    for (var x = 0; x < Constants.GRID_SIZE; x++)
                     {
-                        for (var z = 0; z < GRID_SIZE; z++)
+                        for (var z = 0; z < Constants.GRID_SIZE; z++)
                         {
                             var column = grid[x, z];
                             if (camera.Frustum.Intersects(column.AABB))
                             {
-                                for (var y = 0; y < CHUNKS_PER_COLUMN; y++)
+                                for (var y = 0; y < Constants.CHUNKS_PER_COLUMN; y++)
                                 {
                                     //basicEffect.World = worldMatrix * Matrix.CreateRotationY((float)gameTime.TotalGameTime.TotalSeconds / 2);
                                     var chunk = column[y];
@@ -148,7 +140,7 @@ namespace Trix.Voxels
                                 }
                             }
                             else
-                                culled += ChunkManager.CHUNKS_PER_COLUMN;
+                                culled += Constants.CHUNKS_PER_COLUMN;
                         }
                     }
                 }
