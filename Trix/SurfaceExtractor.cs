@@ -180,7 +180,7 @@ public class ChunkColumn
     {
         this.x = x;
         this.z = z;
-        this.aabb = new BoundingBox(WorldPosition, WorldPosition + 
+        this.aabb = new BoundingBox(WorldPosition, WorldPosition +
             new Vector3(ChunkManager.CHUNK_SIZE, ChunkManager.CHUNK_HEIGHT, ChunkManager.CHUNK_SIZE));
         this.device = device;
 
@@ -633,7 +633,7 @@ public class SurfaceExtractor
             data = 0;
         }
 
-        public bool FlipFace
+        public bool AOFace
         {
             get { return (data & (1u << FLIPFACE_BIT)) > 0u; }
             set
@@ -829,9 +829,9 @@ public class SurfaceExtractor
 
                             uint a00 = neighbors[0], a01 = neighbors[1], a11 = neighbors[2], a10 = neighbors[3];
                             if (a00 + a11 == a10 + a01)
-                                maskLayout[n].FlipFace = Math.Max(a00, a11) < Math.Max(a10, a01);
+                                maskLayout[n].AOFace = Math.Max(a00, a11) < Math.Max(a10, a01);
                             else if (a00 + a11 < a10 + a01)
-                                maskLayout[n].FlipFace = true;
+                                maskLayout[n].AOFace = true;
 
 
                         }
@@ -896,7 +896,7 @@ public class SurfaceExtractor
                                 normal = -normal;
                             }
 
-                            var flip = maskLayout[n].FlipFace;
+                            var flip = maskLayout[n].AOFace;
 
                             var cr = ((c >> 16) & 0xff) / 255f;
                             var cg = ((c >> 8) & 0xff) / 255f;
@@ -1218,11 +1218,6 @@ public class SurfaceExtractor
     public static int GenerateMesh2(ChunkManager cm, GraphicsDevice device, Volume volume, bool centered = false, bool disableGreedyMeshing = false, bool disableAO = false)
     {
         volume.PrepareMesh(device);
-        //vertices.Clear();
-        //faces.Clear();
-        //uvs.Clear();
-        //normals.Clear();
-        //colors.Clear();
 
         VertexPositionColorNormal[] vertices = new VertexPositionColorNormal[5];
 
@@ -1232,7 +1227,6 @@ public class SurfaceExtractor
         {
             if (i < 0 || j < 0 || k < 0 || i >= dims[0] || j >= dims[1] || k >= dims[2])
                 return cm.GetVoxelByRelative(volume.X, volume.Y, volume.Z, i, j, k);
-            //return 0;
 
             var r = volume[i + dims[0] * (j + dims[1] * k)];
             if (r > 0 && (r & 0x1000000u) > 0u)
@@ -1274,19 +1268,11 @@ public class SurfaceExtractor
             for (x[d] = -1; x[d] < dims[d]; )
             {
                 //Compute mask
-                //TODO: Test if the AOMASK should be created outside of the block mask
-                //the aomask generation might be causing a cache miss per loop
                 var n = 0;
                 for (x[v] = 0; x[v] < dims[v]; ++x[v])
                 {
                     for (x[u] = 0; x[u] < dims[u]; ++x[u], ++n)
                     {
-                        //int a = 0;
-                        //if (x[d] < 0 && cm != null)
-                        //    a = cm.GetBlock(volume.X + x[0], volume.Y + x[1], volume.Z + x[2]);
-                        //else
-                        //var a = (0u <= x[d] ? f(x[0], x[1], x[2]) : 0u);
-                        //var b = (x[d] < dims[d] - 1 ? f(x[0] + q[0], x[1] + q[1], x[2] + q[2]) : 0u);
                         var a = f(x[0], x[1], x[2]);
                         var b = f(x[0] + q[0], x[1] + q[1], x[2] + q[2]);
 
@@ -1296,7 +1282,7 @@ public class SurfaceExtractor
                             mask[n] = 0;
                         }
                         else if (a != 0)
-                        {                            
+                        {
                             mask[n] = x[d] > -1 ? a : 0;
                             maskLayout[n].BackFace = false;
                         }
@@ -1350,18 +1336,13 @@ public class SurfaceExtractor
                                 maskLayout[n].SetOcclusion(t, neighbors[t]);
                             }
 
-                            uint a00 = neighbors[1], 
-                                 a01 = neighbors[2], 
-                                 a11 = neighbors[3], 
+                            uint a00 = neighbors[1],
+                                 a01 = neighbors[2],
+                                 a11 = neighbors[3],
                                  a10 = neighbors[0];
-                            //if (a00 + a11 == a10 + a01)
-                            //    maskLayout[n].FlipFace = Math.Max(a00, a11) < Math.Max(a10, a01);
-                            //if (a00 + a11 > a01 + a10)
-                            //    maskLayout[n].FlipFace = true;
-                            if(a00 + a01 + a11 + a10 != 12)
-                                maskLayout[n].FlipFace = true;
 
-
+                            if (a00 + a01 + a11 + a10 != 12)
+                                maskLayout[n].AOFace = true;
                         }
                     }
                 }
@@ -1377,7 +1358,7 @@ public class SurfaceExtractor
                         if (c != 0)
                         {
                             var a = maskLayout[n];
-                            if (disableGreedyMeshing || a.FlipFace)
+                            if (disableGreedyMeshing || a.AOFace)
                             {
                                 w = 1;
                                 h = 1;
@@ -1411,9 +1392,9 @@ public class SurfaceExtractor
                             x[u] = i; x[v] = j;
                             int[] du = { 0, 0, 0 };
                             int[] dv = { 0, 0, 0 };
-                            
+
                             var normal = new Vector3(q[0], q[1], q[2]);
-                            var flip = maskLayout[n].FlipFace;
+                            var aoFace = maskLayout[n].AOFace;
 
                             if (!maskLayout[n].BackFace)
                             {
@@ -1425,132 +1406,58 @@ public class SurfaceExtractor
                                 du[v] = h;
                                 dv[u] = w;
                                 normal = -normal;
-                                //flip = !flip;
                             }
-
 
                             var cr = ((c >> 16) & 0xff) / 255f;
                             var cg = ((c >> 8) & 0xff) / 255f;
                             var cb = (c & 0xff) / 255f;
 
-                            var aouvs = new float[4];
-                            float[] AOcurve = new float[] { 0.75f, 0.85f, 0.95f, 1.0f };
-                            //float[] AOcurve = new float[] { 0.75f, 0.85f, 0.925f, 1.0f };
-                            Color[] ugh = new Color[] { 
-                                Color.Red,
-                                Color.Blue,
-                                Color.Green,
-                                Color.White
-                            };
-
                             var ao = 0f;
-                            if (d == 1)
-                            {
-
-                            }
+                            var AOcurve = new float[] { 0.75f, 0.85f, 0.95f, 1.0f };
                             for (var o = 0; o < 4; ++o)
                             {
-                                //ao += maskLayout[n].GetOcclusion(o) == 3 ? 1 : 0;
                                 var pao = disableAO ? 1f : AOcurve[maskLayout[n].GetOcclusion(o)];
-                                //var ao = disableAO ? 1f : AOcurve[maskLayout[n].GetOcclusion(o)];
-                                //var ao = disableAO ? 1f : (maskLayout[n].GetOcclusion(o) / 3f);
-                                ////var ao = disableAO ? 1f : (maskLayout[n].GetOcclusion(o) / 4f + 0.25f);
-                                ////if (maskLayout[n].GetOcclusion(o) != 3u)
-                                ////    ao = 0.5f;
-                                ////else
-                                ////    ao = 1f;
-                                //var color = new Color(cr * ao, cg * ao, cb * ao, 1);
-                                //colors.Add(color);
-                                ////colors.Add(new Color(1,0,1,1));
-
-                                //vertices[o].Color = new Color(cr * ao, cg * ao, cb * ao);
-                                //vertices[o].Normal = normal;
-                                //colors.Add(new Color(cr, cg, cb));
-                                //uvs.Add(new Vector2(ao, 0));
-                                //colors.Add(ugh[maskLayout[n].GetOcclusion(o)]);
                                 vertices[o].Color = new Color(cr * pao, cg * pao, cb * pao);
                                 vertices[o].Normal = normal;
                                 ao += pao;
-
-                                //aouvs[o] = ao;
                             }
                             ao /= 4f;
-                            //for (var o = 0; o < 4; ++o)
-                            //{
-                            //    uvs.Add(new Vector2(Pack(aouvs[0], aouvs[1]), Pack(aouvs[2], aouvs[3])));
-                            //}
 
-
-                            //var vertex_count = vertices.Count;
-                            if (centered)
+                            if (aoFace)
                             {
-                                vertices[0].Position = new Vector3(x[0], x[1], x[2]) - new Vector3(dims[0], dims[1], dims[2]) / 2f;
-                                vertices[1].Position = new Vector3(x[0] + du[0], x[1] + du[1], x[2] + du[2]) - new Vector3(dims[0], dims[1], dims[2]) / 2f;
-                                vertices[2].Position = new Vector3(x[0] + du[0] + dv[0], x[1] + du[1] + dv[1], x[2] + du[2] + dv[2]) - new Vector3(dims[0], dims[1], dims[2]) / 2f;
-                                vertices[3].Position = new Vector3(x[0] + dv[0], x[1] + dv[1], x[2] + dv[2]) - new Vector3(dims[0], dims[1], dims[2]) / 2f;
-
-                                ////This vert generation code will make the 0,0,0 be the center of the mesh in worldspace
-                                //vertices.Add(new Vector3(x[0], x[1], x[2]) - new Vector3(dims[0], dims[1], dims[2]) / 2f);
-                                //vertices.Add(new Vector3(x[0] + du[0], x[1] + du[1], x[2] + du[2]) - new Vector3(dims[0], dims[1], dims[2]) / 2f);
-                                //vertices.Add(new Vector3(x[0] + du[0] + dv[0], x[1] + du[1] + dv[1], x[2] + du[2] + dv[2]) - new Vector3(dims[0], dims[1], dims[2]) / 2f);
-                                //vertices.Add(new Vector3(x[0] + dv[0], x[1] + dv[1], x[2] + dv[2]) - new Vector3(dims[0], dims[1], dims[2]) / 2f);
+                                vertices[0].Position = new Vector3(x[0], x[1], x[2]);
+                                vertices[1].Position = new Vector3(x[0] + du[0], x[1] + du[1], x[2] + du[2]);
+                                vertices[2].Position = new Vector3(x[0] + du[0] + dv[0], x[1] + du[1] + dv[1], x[2] + du[2] + dv[2]);
+                                vertices[3].Position = new Vector3(x[0] + dv[0], x[1] + dv[1], x[2] + dv[2]);
+                                vertices[4].Position = (vertices[0].Position + vertices[1].Position + vertices[2].Position + vertices[3].Position) / 4;
+                                vertices[4].Normal = normal;
+                                vertices[4].Color = new Color(cr * ao, cg * ao, cb * ao);
                             }
                             else
                             {
-                                if (flip)
-                                {
-                                    vertices[0].Position = new Vector3(x[0], x[1], x[2]);
-                                    vertices[1].Position = new Vector3(x[0] + du[0], x[1] + du[1], x[2] + du[2]);
-                                    vertices[2].Position = new Vector3(x[0] + du[0] + dv[0], x[1] + du[1] + dv[1], x[2] + du[2] + dv[2]);
-                                    vertices[3].Position = new Vector3(x[0] + dv[0], x[1] + dv[1], x[2] + dv[2]);
-                                    vertices[4].Position = (vertices[0].Position + vertices[1].Position + vertices[2].Position + vertices[3].Position) / 4;
-                                    vertices[4].Normal = normal;
-                                    vertices[4].Color = new Color(cr * ao, cg * ao, cb * ao);
-                                }
-                                else
-                                {
-                                    vertices[0].Position = new Vector3(x[0], x[1], x[2]);
-                                    vertices[1].Position = new Vector3(x[0] + du[0], x[1] + du[1], x[2] + du[2]);
-                                    vertices[2].Position = new Vector3(x[0] + du[0] + dv[0], x[1] + du[1] + dv[1], x[2] + du[2] + dv[2]);
-                                    vertices[3].Position = new Vector3(x[0] + dv[0], x[1] + dv[1], x[2] + dv[2]);
-                                }
-                                ////This vert generation code will make the edge of the mesh at 0,0,0
-                                //vertices.Add(new Vector3(x[0], x[1], x[2]));
-                                //vertices.Add(new Vector3(x[0] + du[0], x[1] + du[1], x[2] + du[2]));
-                                //vertices.Add(new Vector3(x[0] + du[0] + dv[0], x[1] + du[1] + dv[1], x[2] + du[2] + dv[2]));
-                                //vertices.Add(new Vector3(x[0] + dv[0], x[1] + dv[1], x[2] + dv[2]));
+                                vertices[0].Position = new Vector3(x[0], x[1], x[2]);
+                                vertices[1].Position = new Vector3(x[0] + du[0], x[1] + du[1], x[2] + du[2]);
+                                vertices[2].Position = new Vector3(x[0] + du[0] + dv[0], x[1] + du[1] + dv[1], x[2] + du[2] + dv[2]);
+                                vertices[3].Position = new Vector3(x[0] + dv[0], x[1] + dv[1], x[2] + dv[2]);
                             }
-
-                            //uvs.Add(new Vector2(0, 1));
-                            //uvs.Add(new Vector2(1, 1));
-                            //uvs.Add(new Vector2(1, 0));
-                            //uvs.Add(new Vector2(0, 0));
 
                             var v0 = (ushort)volume.opaqueMesh.Add(vertices[0]);
                             var v1 = (ushort)volume.opaqueMesh.Add(vertices[1]);
                             var v2 = (ushort)volume.opaqueMesh.Add(vertices[2]);
                             var v3 = (ushort)volume.opaqueMesh.Add(vertices[3]);
-                            
-                            //if (!maskLayout[n].BackFace)
+
+                            if (aoFace)
                             {
-                                if (flip)
-                                {
-                                    var v4 = (ushort)volume.opaqueMesh.Add(vertices[4]);
-                                    volume.opaqueMesh.Triangle(v0,v4, v1);
-                                    volume.opaqueMesh.Triangle(v1, v4, v2);
-                                    volume.opaqueMesh.Triangle(v2, v4, v3);
-                                    volume.opaqueMesh.Triangle(v3, v4, v0);
+                                var v4 = (ushort)volume.opaqueMesh.Add(vertices[4]);
+                                volume.opaqueMesh.Triangle(v0, v4, v1);
+                                volume.opaqueMesh.Triangle(v1, v4, v2);
+                                volume.opaqueMesh.Triangle(v2, v4, v3);
+                                volume.opaqueMesh.Triangle(v3, v4, v0);
 
-                                    //faces.AddRange(new int[] { vertex_count + 1, vertex_count + 2, vertex_count + 3, 
-                                    //                            vertex_count + 1, vertex_count + 3, vertex_count });
-                                }
-                                else
-                                {
-                                    volume.opaqueMesh.Quad(v0, v1, v2, v3);
-
-                                    //faces.AddRange(new int[] { vertex_count, vertex_count + 1, vertex_count + 2, 
-                                    //                            vertex_count, vertex_count + 2, vertex_count + 3 });
-                                }
+                            }
+                            else
+                            {
+                                volume.opaqueMesh.Quad(v0, v1, v2, v3);
                             }
 
                             //Zero-out mask
