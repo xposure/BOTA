@@ -47,8 +47,25 @@ namespace Trix
                 Init();
                 started = true;
             }
+
+            //for (var xx = 0; xx < ChunkManager.CHUNK_SIZE; xx++)
+            //    for (var zz = 0; zz < ChunkManager.CHUNK_SIZE; zz++)
+            //        chunk[xx, 0, zz] = 0xffffff;
+
+            //chunk[0, 1, 0] = 0xffffff;
+            //chunk[0, 1, 1] = 0xffffff;
+            //chunk[0, 1, 2] = 0xffffff;
+            //chunk[0, 1, 3] = 0xffffff;
+            ////chunk[1, 2, 1] = 0xffffff;
+            ////chunk[1, 2, 2] = 0xffffff;
+            ////chunk[2, 2, 2] = 0xffffff;
+            ////chunk[1, 0, 1] = 0xffffff;
+            ////chunk[1, 0, 2] = 0xffffff;
+            ////chunk[2, 0, 2] = 0xffffff;
+            //return;
+
             bool addCaves = false; // (bool)m.GetOption("DefaultGenCaves");
-            bool addCaveLava = false ; // (bool)m.GetOption("DefaultGenLavaCaves");
+            bool addCaveLava = false; // (bool)m.GetOption("DefaultGenLavaCaves");
             int ChunkSize = ChunkManager.CHUNK_SIZE;// m.GetChunkSize();
             x *= ChunkSize;
             y *= ChunkSize;

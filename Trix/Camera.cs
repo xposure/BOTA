@@ -55,7 +55,8 @@ namespace Trix
 
             int centerX = game.Window.ClientBounds.Width / 2;
             int centerY = game.Window.ClientBounds.Height / 2;
-            Mouse.SetPosition(centerX, centerY);
+            if(game.IsActive)
+                Mouse.SetPosition(centerX, centerY);
 
             angle.X += MathHelper.ToRadians((mouse.Y - centerY) * turnSpeed * 0.01f); // pitch
             angle.Y += MathHelper.ToRadians((mouse.X - centerX) * turnSpeed * 0.01f); // yaw
