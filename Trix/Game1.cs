@@ -2,11 +2,12 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using Trix.Voxels;
 
 namespace Trix
 {
     //https://www.giawa.com
-
+    //http://devblog.andyc.org/2011/06/ - networking post and resources
 
     /// <summary>
     /// This is the main type for your game.

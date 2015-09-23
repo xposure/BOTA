@@ -2,10 +2,19 @@
 
 namespace Trix
 {
+    /*
+     * Rendering 
+     *  - Chunks need to be in layers, hide no visible cubes as gray
+     *  - Culling
+     *  - Cubes need to be voxelized
+     *  - Should selection be a texture or another buffer? what about designations?
+     *  - Floors?
+     *  - Need custom shaders soon
+     *  - Need font rendering for debug info
+     *  
+     */
+
 #if WINDOWS || LINUX
-    /// <summary>
-    /// The main class.
-    /// </summary>
     public static class Program
     {
         /// <summary>

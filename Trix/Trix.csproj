@@ -47,7 +47,15 @@
     <Compile Include="Generators\SimpleHeightMap.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Rendering\DynamicMesh.cs" />
+    <Compile Include="Rendering\SurfaceExtractor.cs" />
+    <Compile Include="Rendering\VertexPositionColorNormal.cs" />
     <Compile Include="SurfaceExtractor.cs" />
+    <Compile Include="Voxels\Chunk.cs" />
+    <Compile Include="Voxels\ChunkColumn.cs" />
+    <Compile Include="Voxels\ChunkManager.cs" />
+    <Compile Include="Voxels\Dimensions.cs" />
+    <Compile Include="Voxels\VoxelVolume.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="LibNoise, Version=0.2.0.0, Culture=neutral, processorArchitecture=MSIL">

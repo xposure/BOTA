@@ -5,6 +5,8 @@ using System.Text;
 using LibNoise;
 using LibNoise.Modifiers;
 using Microsoft.Xna.Framework;
+using Trix.Rendering;
+using Trix.Voxels;
 
 namespace Trix
 {
@@ -40,7 +42,7 @@ namespace Trix
 
 
         bool started = false;
-        public void GetChunk(int x, int y, int z, Volume chunk)
+        public void GetChunk(int x, int y, int z, VoxelVolume chunk)
         {
             if (!started)
             {
