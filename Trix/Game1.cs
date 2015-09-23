@@ -245,7 +245,7 @@ namespace Trix
             }
 
             var culled = _chunkManager.Draw(gameTime, basicEffect, wireFrameEnabled ? wireFrame : null, camera);
-            System.Diagnostics.Trace.WriteLine(culled);
+            //System.Diagnostics.Trace.WriteLine(culled);
             base.Draw(gameTime);
         }
     }

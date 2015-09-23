@@ -1271,7 +1271,7 @@ public class SurfaceExtractor
             negArea[2, v] = 1;
             negArea[3, u] = 1;
 
-            for (x[d] = 0; x[d] < dims[d]; )
+            for (x[d] = -1; x[d] < dims[d]; )
             {
                 //Compute mask
                 //TODO: Test if the AOMASK should be created outside of the block mask
@@ -1296,13 +1296,14 @@ public class SurfaceExtractor
                             mask[n] = 0;
                         }
                         else if (a != 0)
-                        {
-                            mask[n] = a;
+                        {                            
+                            mask[n] = x[d] > -1 ? a : 0;
+                            maskLayout[n].BackFace = false;
                         }
                         else
                         {
+                            mask[n] = x[d] < dims[d] - 1 ? b : 0;
                             maskLayout[n].BackFace = true;
-                            mask[n] = b;
                         }
 
                         if (disableAO || mask[n] == 0)
@@ -1427,16 +1428,20 @@ public class SurfaceExtractor
                             var cb = (c & 0xff) / 255f;
 
                             var aouvs = new float[4];
-                            float[] AOcurve = new float[] { 0.75f, 0.85f, 0.925f, 1.0f };
+                            float[] AOcurve = new float[] { 0.25f, 0.5f, 0.75f, 1.0f };
+                            //float[] AOcurve = new float[] { 0.75f, 0.85f, 0.925f, 1.0f };
                             Color[] ugh = new Color[] { 
                                 new Color(1,0,0,1),
                                 new Color(0,1,0,1),
                                 new Color(0,0,1,1),
                                 new Color(1,1,1,1)
                             };
+
+                            var ao = 0f;
                             for (var o = 0; o < 4; ++o)
                             {
-                                var ao = disableAO ? 1f : AOcurve[maskLayout[n].GetOcclusion(o)];
+                                 ao += disableAO ? 1f : AOcurve[maskLayout[n].GetOcclusion(o)];
+                                //var ao = disableAO ? 1f : AOcurve[maskLayout[n].GetOcclusion(o)];
                                 //var ao = disableAO ? 1f : (maskLayout[n].GetOcclusion(o) / 3f);
                                 ////var ao = disableAO ? 1f : (maskLayout[n].GetOcclusion(o) / 4f + 0.25f);
                                 ////if (maskLayout[n].GetOcclusion(o) != 3u)
@@ -1447,15 +1452,20 @@ public class SurfaceExtractor
                                 //colors.Add(color);
                                 ////colors.Add(new Color(1,0,1,1));
 
-                                vertices[o].Color = new Color(cr * ao, cg * ao, cb * ao);
-                                vertices[o].Normal = normal;
+                                //vertices[o].Color = new Color(cr * ao, cg * ao, cb * ao);
+                                //vertices[o].Normal = normal;
                                 //colors.Add(new Color(cr, cg, cb));
                                 //uvs.Add(new Vector2(ao, 0));
                                 //colors.Add(ugh[maskLayout[n].GetOcclusion(o)]);
 
                                 //aouvs[o] = ao;
                             }
-
+                            ao /= 4f;
+                            for (var o = 0; o < 4; ++o)
+                            {
+                                vertices[o].Color = new Color(cr * ao, cg * ao, cb * ao);
+                                vertices[o].Normal = normal;
+                            }
 
                             //for (var o = 0; o < 4; ++o)
                             //{
