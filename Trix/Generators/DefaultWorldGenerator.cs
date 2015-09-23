@@ -243,7 +243,7 @@ namespace Trix
 
         public void Init()
         {
-            int Seed = 1234;
+            int Seed = 123456;
 
             BiomeBase.Frequency = (0.2);
             BiomeBase.Seed = (Seed - 1);

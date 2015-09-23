@@ -59,6 +59,14 @@ namespace Trix.Rendering
             {
                 return (data >> (vert * 3)) & 3u;
             }
+
+            public uint TotalOcclusion()
+            {
+                var total = 0u;
+                for (var o = 0; o < 4; ++o)
+                    total += GetOcclusion(o) < 3 ? 1u : 0u;
+                return total;
+            }
         }
 
         public static int ExtractMesh(VoxelVolume volume, bool disableGreedyMeshing = false, bool disableAO = false)
@@ -188,8 +196,8 @@ namespace Trix.Rendering
                                      a11 = neighbors[3],
                                      a10 = neighbors[0];
 
-                                if (a00 + a01 + a11 + a10 != 12)
-                                    maskLayout[n].AOFace = true;
+                                //if (a00 + a01 + a11 + a10 != 12)
+                                //    maskLayout[n].AOFace = true;
                             }
                         }
                     }
@@ -261,10 +269,13 @@ namespace Trix.Rendering
 
                                 var ao = 0f;
                                 var AOcurve = new float[] { 0.45f, 0.65f, 0.85f, 1.0f };
+                                var auCurveFactor = new float[] { 1f, 0.99f, 0.98f, 0.97f, 0.96f };
+                                var aoFactor = auCurveFactor[ maskLayout[n].TotalOcclusion()];
                                 for (var o = 0; o < 4; ++o)
                                 {
                                     var pao = disableAO ? 1f : AOcurve[maskLayout[n].GetOcclusion(o)];
-                                    vertices[o].Color = new Color(cr * pao, cg * pao, cb * pao);
+                                    //vertices[o].Color = new Color(cr * pao, cg * pao, cb * pao);
+                                    vertices[o].Color = new Color(cr * aoFactor, cg * aoFactor, cb * aoFactor);
                                     vertices[o].Normal = normal;
                                     ao += pao;
                                 }
