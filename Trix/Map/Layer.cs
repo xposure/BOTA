@@ -55,7 +55,7 @@ namespace Trix.Map
         {
             foreach (var pass in effect.CurrentTechnique.Passes)
             {
-                effect.World = Matrix.CreateTranslation(new Vector3(zLevel * 4, zLevel * 4, 0));
+                effect.World = Matrix.CreateTranslation(new Vector3(0, zLevel, 0));
                 pass.Apply();
                 mesh.Draw();
             }
