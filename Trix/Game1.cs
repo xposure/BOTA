@@ -2,7 +2,7 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-using Trix.Voxels;
+using Trix.Map;
 
 namespace Trix
 {
@@ -28,6 +28,7 @@ namespace Trix
         MouseState mouseState;
         KeyboardState keyboardState;
         Camera camera;
+        private World world;
         bool wireFrameEnabled = false;
 
         public Game1()
@@ -141,7 +142,9 @@ namespace Trix
             mouseState = Mouse.GetState();
             keyboardState = Keyboard.GetState();
 
-            _chunkManager.Initialize();
+            //_chunkManager.Initialize();
+            world = new World(GraphicsDevice, 1, 4);
+            world.Generate();
         }
 
         /// <summary>
@@ -244,8 +247,18 @@ namespace Trix
 
                 System.Diagnostics.Trace.WriteLine(1 / gameTime.ElapsedGameTime.TotalSeconds + ":" + vertexCount);
             }
+            if (wireFrameEnabled)
+            {
+                var rast = new RasterizerState();
+                rast.FillMode = FillMode.WireFrame;
+                rast.CullMode = CullMode.None;
+                GraphicsDevice.RasterizerState = rast;
+            }
+            else
+                GraphicsDevice.RasterizerState = RasterizerState.CullCounterClockwise;
 
-            var culled = _chunkManager.Draw(gameTime, basicEffect, wireFrameEnabled ? wireFrame : null, camera);
+            //var culled = _chunkManager.Draw(gameTime, basicEffect, wireFrameEnabled ? wireFrame : null, camera);
+            world.Render(basicEffect);
             //System.Diagnostics.Trace.WriteLine(culled);
             base.Draw(gameTime);
         }

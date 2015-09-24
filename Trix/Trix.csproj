@@ -38,26 +38,29 @@
     <ApplicationIcon>Icon.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Assert.cs" />
     <Compile Include="Constants.cs" />
     <Compile Include="Game1.cs" />
     <Compile Include="Generators\DefaultWorldGenerator.cs" />
     <Compile Include="Generators\Fill.cs" />
     <Compile Include="Generators\Generators.cs" />
     <Compile Include="Generators\SimpleHeightMap.cs" />
+    <Compile Include="Utility.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Rendering\Camera.cs" />
     <Compile Include="Rendering\DynamicMesh.cs" />
     <Compile Include="Rendering\SurfaceExtractor.cs" />
     <Compile Include="Rendering\VertexPositionColorNormal.cs" />
-    <Compile Include="Voxels\Chunk.cs" />
-    <Compile Include="Voxels\ChunkColumn.cs" />
-    <Compile Include="Voxels\ChunkManager.cs" />
-    <Compile Include="Voxels\Dimensions.cs" />
-    <Compile Include="Voxels\Layer.cs" />
-    <Compile Include="Voxels\Position.cs" />
-    <Compile Include="Voxels\VoxelVolume.cs" />
-    <Compile Include="Voxels\World.cs" />
+    <Compile Include="Map\Chunk.cs" />
+    <Compile Include="Map\ChunkColumn.cs" />
+    <Compile Include="Map\ChunkManager.cs" />
+    <Compile Include="Map\Dimensions.cs" />
+    <Compile Include="Map\Layer.cs" />
+    <Compile Include="Map\Position.cs" />
+    <Compile Include="Map\MapCell.cs" />
+    <Compile Include="Map\VoxelVolume.cs" />
+    <Compile Include="Map\World.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="LibNoise, Version=0.2.0.0, Culture=neutral, processorArchitecture=MSIL">

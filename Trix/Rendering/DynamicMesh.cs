@@ -30,10 +30,10 @@ namespace Trix.Rendering
         public int VertexCount { get { return _vertexBuffer == null ? 0 : _vertexBuffer.VertexCount; } }
         public int PrimitiveCount { get { return _indexData.Count == 0 ? _vertexData.Count / 3 : _indexData.Count / 3; } }
 
-        public int Add(T t)
+        public ushort Add(T t)
         {
             _vertexData.Add(t);
-            return _vertexData.Count - 1;
+            return (ushort)(_vertexData.Count - 1);
         }
 
         public void Triangle(ushort i0, ushort i1, ushort i2)

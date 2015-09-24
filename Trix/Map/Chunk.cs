@@ -6,7 +6,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Trix.Rendering;
 
-namespace Trix.Voxels
+namespace Trix.Map
 {
     public class Chunk : VoxelVolume
     {

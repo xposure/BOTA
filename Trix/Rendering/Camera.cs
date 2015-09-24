@@ -13,7 +13,7 @@ namespace Trix
         private Matrix projection = Matrix.Identity;
         private Matrix view = Matrix.Identity;
 
-        private Vector3 position = new Vector3(0, -100, 0);
+        private Vector3 position = new Vector3(0, -10, 0);
         private Vector3 angle = new Vector3();
         private float moveSpeed = 25f;
         private float turnSpeed = 25f;

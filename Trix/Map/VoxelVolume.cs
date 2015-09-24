@@ -5,7 +5,7 @@ using System.Text;
 using Microsoft.Xna.Framework.Graphics;
 using Trix.Rendering;
 
-namespace Trix.Voxels
+namespace Trix.Map
 {
     public class VoxelVolume
     {

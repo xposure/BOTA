@@ -6,7 +6,7 @@ using LibNoise;
 using LibNoise.Modifiers;
 using Microsoft.Xna.Framework;
 using Trix.Rendering;
-using Trix.Voxels;
+using Trix.Map;
 
 namespace Trix
 {
