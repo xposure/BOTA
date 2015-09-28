@@ -28,18 +28,22 @@ namespace Trix.Map
 
         }
 
-        public void Render(BasicEffect effect)
+        public void Render(BasicEffect effect, Camera camera)
         {
-            for (var i = 0; i < depth; ++i)
+            var d = (int)camera.Position.Y;
+            for (var i = 0; i < depth && i < d ; ++i)
                 layers[i].Render(effect);
         }
 
-        public void Generate()
+        public void Generate(DefaultWorldGenerator gen)
         {
-            layers[0].Fill(MapCell.BEDROCK);
-            layers[1].Fill(MapCell.BEDROCK);
-            layers[2].Fill(MapCell.BEDROCK);
+        //    layers[0].Fill(MapCell.BEDROCK);
+        //    layers[1].Fill(MapCell.BEDROCK);
+        //    layers[2].Fill(MapCell.BEDROCK);
             //layers[1].Fill(MapCell.GRASS);
+            gen.Init();
+            gen.Start();
+            gen.BuildWorld(0, 0, 0, this);
 
             for (var i = 0; i < depth; ++i)
             {
@@ -56,6 +60,10 @@ namespace Trix.Map
                     return MapCell.AIR;
 
                 return layers[z][x, y];
+            }
+            set
+            {
+                layers[z][x, y] = value;
             }
         }
         //public MapCell GetVoxel(Position p)

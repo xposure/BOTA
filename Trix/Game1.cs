@@ -143,8 +143,11 @@ namespace Trix
             keyboardState = Keyboard.GetState();
 
             //_chunkManager.Initialize();
-            world = new World(GraphicsDevice, 1, 4);
-            world.Generate();
+            var generator = new DefaultWorldGenerator();
+            world = new World(GraphicsDevice, 192, 128);
+            world.Generate(generator);
+
+            camera.Position = Vector3.Zero;
         }
 
         /// <summary>
@@ -258,7 +261,7 @@ namespace Trix
                 GraphicsDevice.RasterizerState = RasterizerState.CullCounterClockwise;
 
             //var culled = _chunkManager.Draw(gameTime, basicEffect, wireFrameEnabled ? wireFrame : null, camera);
-            world.Render(basicEffect);
+            world.Render(basicEffect, camera);
             //System.Diagnostics.Trace.WriteLine(culled);
             base.Draw(gameTime);
         }

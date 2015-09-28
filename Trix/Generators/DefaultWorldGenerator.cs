@@ -42,6 +42,185 @@ namespace Trix
 
 
         bool started = false;
+        public void BuildWorld(int x, int y, int z, World world)
+        {
+            if (!started)
+            {
+                Init();
+                started = true;
+            }
+
+            //for (var xx = 0; xx < ChunkManager.CHUNK_SIZE; xx++)
+            //    for (var zz = 0; zz < ChunkManager.CHUNK_SIZE; zz++)
+            //        chunk[xx, 0, zz] = 0xffffff;
+
+            //chunk[0, 1, 0] = 0xffffff;
+            //chunk[0, 1, 1] = 0xffffff;
+            //chunk[0, 1, 2] = 0xffffff;
+            //chunk[0, 1, 3] = 0xffffff;
+            ////chunk[1, 2, 1] = 0xffffff;
+            ////chunk[1, 2, 2] = 0xffffff;
+            ////chunk[2, 2, 2] = 0xffffff;
+            ////chunk[1, 0, 1] = 0xffffff;
+            ////chunk[1, 0, 2] = 0xffffff;
+            ////chunk[2, 0, 2] = 0xffffff;
+            //return;
+
+            bool addCaves = false; // (bool)m.GetOption("DefaultGenCaves");
+            bool addCaveLava = false; // (bool)m.GetOption("DefaultGenLavaCaves");
+            int ChunkSize = world.Size;// m.GetChunkSize();
+            int chunksize = world.Size;
+            var noise = new FastNoise();
+            noise.Frequency = 0.01;
+
+            for (int xx = 0; xx < chunksize; xx++)
+            {
+                for (int yy = 0; yy < chunksize; yy++)
+                {
+                    int currentHeight = (byte)((finalTerrain.GetValue((xx + x) / 100.0f, 0, (yy + y) / 100.0f) * 60) + 64);
+                    int ymax = currentHeight;
+
+                    int biome = (int)(BiomeSelect.GetValue((x + xx) / 100.0f, 0, (y + yy) / 100.0f) * 2); //MD * 2
+                    MapCell toplayer = MapCell.DIRT;
+                    if (biome == 0)
+                    {
+                        toplayer = MapCell.DIRT;
+                    }
+                    if (biome == 1)
+                    {
+                        toplayer = MapCell.SAND;
+                    }
+                    if (biome == 2)
+                    {
+                        toplayer = MapCell.DIRT;
+                    }
+                    if (biome == 3)
+                    {
+                        toplayer = MapCell.DIRT;
+                    }
+                    if (biome == 4)
+                    {
+                        toplayer = MapCell.DIRT;
+                    }
+                    if (biome == 5)
+                    {
+                        toplayer = MapCell.CLAY;
+                    }
+
+                    int stoneHeight = (int)currentHeight - ((64 - (currentHeight % 64)) / 8) + 1;
+
+                    if (ymax < seaLevel)
+                    {
+                        ymax = seaLevel;
+                    }
+                    ymax++;
+                    if (ymax > z + chunksize - 1)
+                    {
+                        ymax = z + chunksize - 1;
+                    }
+                    for (int bY = z; bY <= ymax; bY++)
+                    {
+                        MapCell curBlock = MapCell.AIR;
+
+                        // Place bedrock
+                        if (bY == 0)
+                        {
+                            curBlock = MapCell.BEDROCK;
+                        }
+                        else if (bY < currentHeight)
+                        {
+                            if (bY < stoneHeight)
+                            {
+                                curBlock = MapCell.STONE;
+                                // Add caves
+                                if (addCaves)
+                                {
+                                    if (caveNoise.GetValue((x + xx) / 4.0f, (bY) / 1.5f, (y + yy) / 4.0f) > cavestreshold)
+                                    {
+                                        if (bY < 10 && addCaveLava)
+                                        {
+                                            curBlock = MapCell.LAVA;
+                                        }
+                                        else
+                                        {
+                                            curBlock = MapCell.AIR;
+                                        }
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                curBlock = toplayer;
+                            }
+                        }
+                        else if ((currentHeight + 1) == bY && bY > seaLevel && biome == 3)
+                        {
+                            curBlock = MapCell.SNOW;
+                            continue;
+                        }
+                        else if ((currentHeight + 1) == bY && bY > seaLevel + 1)
+                        {
+                            if (biome == 1 || biome == 0)
+                            {
+                                continue;
+                            }
+                            double f = flowers.GetValue(x + xx / 10.0f, 0, y + yy / 10.0f);
+                            if (f < -0.999)
+                            {
+                                curBlock = MapCell.REDROSE;
+                            }
+                            else if (f > 0.999)
+                            {
+                                curBlock = MapCell.YELLOWFLOWER;
+                            }
+                            else if (f < 0.001 && f > -0.001)
+                            {
+                                curBlock = MapCell.PUMPKIN;
+                            }
+                        }
+                        else if (currentHeight == bY)
+                        {
+                            if (bY == seaLevel || bY == seaLevel - 1 || bY == seaLevel - 2)
+                            {
+                                curBlock = MapCell.SAND;  // FF
+                            }
+                            else if (bY < seaLevel - 1)
+                            {
+                                curBlock = MapCell.GRAVEL;  // FF
+                            }
+                            else if (toplayer.TypeID == MapCell.DIRT.TypeID)
+                            {
+                                curBlock = MapCell.GRASS;
+                            }
+                            else
+                            {
+                                curBlock = toplayer; // FF
+                            }
+                        }
+                        else
+                        {
+                            if (bY <= seaLevel)
+                            {
+                                curBlock = MapCell.WATER;  // FF
+                            }
+                            else
+                            {
+                                curBlock = MapCell.AIR;  // FF
+                            }
+                            if (bY == seaLevel && biome == 3)
+                            {
+                                curBlock = MapCell.ICE;
+                            }
+                        }
+                        //var idx = xx + chunksize * ((yy) + chunksize * (bY - z));
+                        world[xx,  yy, bY - z] = curBlock;
+                        //chunk[idx] = curBlock;
+                        //chunk[m.Index3d(xx, yy, bY - z, chunksize, chunksize)] = curBlock;
+                    }
+                }
+            }
+        }
+
         public void GetChunk(int x, int y, int z, VoxelVolume chunk)
         {
             if (!started)
