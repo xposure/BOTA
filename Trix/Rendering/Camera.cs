@@ -43,6 +43,17 @@ namespace Trix
             set { angle = value; }
         }
 
+        public float Zoom
+        {
+            get { return zoomDistance; }
+        }
+
+        public int Depth
+        {
+            get { return (int)position.Y; }
+            set { position.Y = MathHelper.Clamp(value, 1, 128); }
+        }
+
         public Camera(GraphicsDevice device)
         {
             float ratio = (float)device.Viewport.Width / (float)device.Viewport.Height;
@@ -51,6 +62,7 @@ namespace Trix
             var mouse = Mouse.GetState();
             mousePosition = new Vector2(mouse.Position.X, mouse.Position.Y);
             mouseWheel = mouse.ScrollWheelValue;
+            Depth = 100;
         }
 
         public void Update(Game game, GameTime gameTime, KeyboardState keyboard, MouseState mouse)
@@ -64,23 +76,46 @@ namespace Trix
             mouseWheel = mouse.ScrollWheelValue;
         }
 
-        float zoomDistance = 25;
-        Vector2 mousePosition;
         int mouseWheel;
         float avatarYaw = 0;
+        float zoomDistance = 25;
+        Vector2 mousePosition;
         Vector3 thirdPersonReference = new Vector3(0, 1, -1);
+
         private void overheadView(Game game, GameTime gameTime, KeyboardState keyboard, MouseState mouse)
         {
             game.IsMouseVisible = true;
             var dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
 
+            var moveVector = Vector3.Zero;
+            var newMousePosition = new Vector2(mouse.Position.X, mouse.Position.Y);
+            var mouseDelta = mousePosition - newMousePosition;
+
             var newScrollWheel = mouse.ScrollWheelValue;
             var mouseScrollDelta = mouseWheel - newScrollWheel;
-            if (mouseScrollDelta != 0)
+            //swivel around point
+            if (mouse.LeftButton == ButtonState.Pressed)
+            {
+                if (keyboard.IsKeyDown(Keys.LeftShift))
+                {
+                    if (mouseDelta.X != 0)
+                        avatarYaw += mouseDelta.X * dt;
+
+                    if (mouseDelta.Y != 0)
+                        thirdPersonReference.Y = MathHelper.Clamp(thirdPersonReference.Y - mouseDelta.Y * dt, 1, 2);
+                }
+                else
+                {
+                    moveVector.X += mouseDelta.X * dt * moveSpeed;
+                    moveVector.Z += mouseDelta.Y * dt * moveSpeed;
+                }
+            }
+            else if (mouseScrollDelta != 0)
             {
                 if (keyboard.IsKeyDown(Keys.LeftControl))
                 {
-                    zoomDistance += dt * mouseScrollDelta;
+                    if (mouseScrollDelta != 0)
+                        zoomDistance = MathHelper.Clamp(zoomDistance + dt * mouseScrollDelta, 10, 100);
                 }
                 else
                 {
@@ -91,35 +126,15 @@ namespace Trix
                 }
             }
 
-            var moveVector = Vector3.Zero;
-            var newMousePosition = new Vector2(mouse.Position.X, mouse.Position.Y);
-            var mouseDelta = mousePosition - newMousePosition;
-            if (mouse.LeftButton == ButtonState.Pressed)
-            {
-                if (mouseDelta.X != 0)
-                    avatarYaw += mouseDelta.X * dt;
 
-                if (mouseDelta.Y != 0)
-                {
-                    thirdPersonReference.Y -= mouseDelta.Y * dt;
-                }
-            }
-            else if (mouse.RightButton == ButtonState.Pressed)
-            {
-                moveVector.X += mouseDelta.X * dt * moveSpeed;
-                moveVector.Z += mouseDelta.Y * dt * moveSpeed;
-            }
-            else
-            {
-                if (keyboard.IsKeyDown(Keys.D))
-                    moveVector.X -= moveSpeed * dt;
-                if (keyboard.IsKeyDown(Keys.A))
-                    moveVector.X += moveSpeed * dt;
-                if (keyboard.IsKeyDown(Keys.W))
-                    moveVector.Z += moveSpeed * dt;
-                if (keyboard.IsKeyDown(Keys.S))
-                    moveVector.Z -= moveSpeed * dt;
-            }
+            if (keyboard.IsKeyDown(Keys.D))
+                moveVector.X -= moveSpeed * dt;
+            if (keyboard.IsKeyDown(Keys.A))
+                moveVector.X += moveSpeed * dt;
+            if (keyboard.IsKeyDown(Keys.W))
+                moveVector.Z += moveSpeed * dt;
+            if (keyboard.IsKeyDown(Keys.S))
+                moveVector.Z -= moveSpeed * dt;
 
 
             Matrix rotationMatrix = Matrix.CreateRotationY(avatarYaw);
@@ -129,7 +144,7 @@ namespace Trix
 
             // Create a vector pointing the direction the camera is facing.
             Vector3 transformedReference =
-                Vector3.Transform(thirdPersonReference, rotationMatrix);
+                Vector3.Transform(Vector3.Normalize(thirdPersonReference), rotationMatrix);
 
             transformedReference *= zoomDistance;
 

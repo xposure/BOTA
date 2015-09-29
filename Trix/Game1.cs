@@ -1,4 +1,6 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -21,6 +23,7 @@ namespace Trix
         //Volume _volume;
         BasicEffect basicEffect;
         BasicEffect wireFrame;
+        SpriteFont arialFont;
         //Matrix worldMatrix;
         //Matrix viewMatrix;
         //Matrix projectionMatrix;
@@ -147,7 +150,7 @@ namespace Trix
             world = new World(GraphicsDevice, 192, 128);
             world.Generate(generator);
 
-            camera.Position = Vector3.Zero;
+            arialFont = Content.Load<SpriteFont>("fonts/arial");
         }
 
         /// <summary>
@@ -235,8 +238,25 @@ namespace Trix
         }
 
         private int lastSecond = 0;
+        private List<string> debugText = new List<string>(32);
+
+        public void AddDebugText(string text)
+        {
+            debugText.Add(text);
+        }
+
+        public void AddDebugText(string text, params object[] args)
+        {
+            AddDebugText(string.Format(text, args));
+        }
+
         protected override void Draw(GameTime gameTime)
         {
+            debugText.Clear();
+            AddDebugText("Position: " + camera.Position.ToString());
+            AddDebugText("Zoom: " + camera.Zoom);
+
+
             GraphicsDevice.Clear(Color.CornflowerBlue);
 
             var currentSecond = (int)gameTime.TotalGameTime.TotalSeconds;
@@ -263,6 +283,14 @@ namespace Trix
             //var culled = _chunkManager.Draw(gameTime, basicEffect, wireFrameEnabled ? wireFrame : null, camera);
             world.Render(basicEffect, camera);
             //System.Diagnostics.Trace.WriteLine(culled);
+
+
+            spriteBatch.Begin();
+            for (var i = 0; i < debugText.Count;i++)
+                spriteBatch.DrawString(arialFont, debugText[i], new Vector2(0, i * arialFont.LineSpacing), Color.White);
+            spriteBatch.End();
+
+
             base.Draw(gameTime);
         }
     }
