@@ -14,14 +14,16 @@ namespace Trix.Map
         private World world;
         private MapCell[] mapCells;
         private int zLevel;
-        public DynamicMesh<VertexPositionColorNormal> mesh;
+        public DynamicMesh<VertexPositionColorNormal> visibleMesh;
+        public DynamicMesh<VertexPositionColorNormal> hiddenMesh;
 
         public Layer(World world, int z)
         {
             this.world = world;
             this.mapCells = new MapCell[world.Size * world.Size];
             this.zLevel = z;
-            this.mesh = new DynamicMesh<VertexPositionColorNormal>(world.Device);
+            this.visibleMesh = new DynamicMesh<VertexPositionColorNormal>(world.Device);
+            this.hiddenMesh = new DynamicMesh<VertexPositionColorNormal>(world.Device);
         }
 
         public int Depth { get { return zLevel; } }
@@ -51,20 +53,40 @@ namespace Trix.Map
                 mapCells[i] = cell;
         }
 
-        public void Render(BasicEffect effect)
+        public void Render(BasicEffect effect, Camera camera)
         {
+            var cameraDepth = camera.Depth;
+            var zDistance = camera.Depth - zLevel;
+            const int zFadeRange = 32;
+
+            if (zDistance > zFadeRange)
+                effect.AmbientLightColor = new Vector3(0, 0, 0);
+            else if (zDistance > 0)
+                effect.AmbientLightColor = Vector3.One / zFadeRange * (zFadeRange  - zDistance);
+            else
+                effect.AmbientLightColor = Vector3.One;
+
+            var verts = 0;
             foreach (var pass in effect.CurrentTechnique.Passes)
             {
                 effect.World = Matrix.CreateTranslation(new Vector3(0, zLevel, 0));
                 pass.Apply();
-                mesh.Draw();
+                visibleMesh.Draw();
+                Game1.verticesRendered += visibleMesh.VertexCount;
+
+                if (camera.Depth == this.zLevel + 1)
+                {
+                    hiddenMesh.Draw();
+                    Game1.verticesRendered += hiddenMesh.VertexCount;
+                }
             }
+
         }
 
         public void UpdateHiddenCells()
         {
             //TODO: optimize
-            for(var x = 0; x < world.Size;++x)
+            for (var x = 0; x < world.Size; ++x)
             {
                 for (var y = 0; y < world.Size; ++y)
                 {
@@ -85,7 +107,7 @@ namespace Trix.Map
                         continue;
                     else if (zLevel < world.Depth - 1 && world[x, y, zLevel + 1].Meta.IsEmpty)
                         continue;
-                    
+
                     mapCells[x + y * world.Size].Hidden = true;
                 }
             }
@@ -104,7 +126,7 @@ namespace Trix.Map
             *      when rendering on the zlevel, render the entire buffer to show hidden faces
             */
 
-            mesh.Clear();
+            visibleMesh.Clear();
 
             VertexPositionColorNormal[] vertices = new VertexPositionColorNormal[4];
 
@@ -188,11 +210,11 @@ namespace Trix.Map
                             }
 
 
-                            var v0 = mesh.Add(vertices[0]);
-                            var v1 = mesh.Add(vertices[1]);
-                            var v2 = mesh.Add(vertices[2]);
-                            var v3 = mesh.Add(vertices[3]);
-                            mesh.Quad(v0, v1, v2, v3);
+                            var v0 = visibleMesh.Add(vertices[0]);
+                            var v1 = visibleMesh.Add(vertices[1]);
+                            var v2 = visibleMesh.Add(vertices[2]);
+                            var v3 = visibleMesh.Add(vertices[3]);
+                            visibleMesh.Quad(v0, v1, v2, v3);
                         }
                     }
 
@@ -201,7 +223,7 @@ namespace Trix.Map
                 }
             }
 
-            mesh.Update();
+            visibleMesh.Update();
         }
     }
 }

@@ -17,6 +17,7 @@ namespace Trix.Rendering
         {
             private const int BACKFACE_BIT = 31;
             private const int AOFACE_BIT = 30;
+            private const int HIDDENFACE_BIT = 29;
             //occlusion = 0 - 11
             //flip = 12
             public uint data;
@@ -47,6 +48,18 @@ namespace Trix.Rendering
                         data |= (1u << BACKFACE_BIT);
                     else
                         data &= ((1u << BACKFACE_BIT) ^ 0xffffffffu);
+                }
+            }
+
+            public bool HiddenFace
+            {
+                get { return (data & (1u << HIDDENFACE_BIT)) > 0u; }
+                set
+                {
+                    if (value)
+                        data |= (1u << HIDDENFACE_BIT);
+                    else
+                        data &= ((1u << HIDDENFACE_BIT) ^ 0xffffffffu);
                 }
             }
 
@@ -81,7 +94,7 @@ namespace Trix.Rendering
             {
                 if (i < 0 || j < 0 || k < 0 || i >= dims[0] || j >= dims[1] || k >= dims[2])
                     return volume.GetRelativeVoxel(i, j, k);
-                    //return cm.GetVoxelByRelative(volume.X, volume.Y, volume.Z, i, j, k);
+                //return cm.GetVoxelByRelative(volume.X, volume.Y, volume.Z, i, j, k);
 
                 var r = volume[i + dims[0] * (j + dims[1] * k)];
                 if (r > 0 && (r & 0x1000000u) > 0u)
@@ -270,7 +283,7 @@ namespace Trix.Rendering
                                 var ao = 0f;
                                 var AOcurve = new float[] { 0.45f, 0.65f, 0.85f, 1.0f };
                                 var auCurveFactor = new float[] { 1f, 0.99f, 0.98f, 0.97f, 0.96f };
-                                var aoFactor = auCurveFactor[ maskLayout[n].TotalOcclusion()];
+                                var aoFactor = auCurveFactor[maskLayout[n].TotalOcclusion()];
                                 for (var o = 0; o < 4; ++o)
                                 {
                                     var pao = disableAO ? 1f : AOcurve[maskLayout[n].GetOcclusion(o)];
@@ -355,7 +368,8 @@ namespace Trix.Rendering
             */
 
 
-            layer.mesh.Clear();
+            layer.visibleMesh.Clear();
+            layer.hiddenMesh.Clear();
 
             VertexPositionColorNormal[] vertices = new VertexPositionColorNormal[4];
 
@@ -372,7 +386,7 @@ namespace Trix.Rendering
                 else
                     cell = layer[i, k];
 
-                if(cell.Hidden)
+                if (cell.Hidden)
                     return 0xff;
 
                 return cell.ToUInt();
@@ -392,8 +406,8 @@ namespace Trix.Rendering
 
                 if (mask.Length < dims[u] * dims[v])
                 {
-                    mask = new uint[dims[u] * dims[v]];
-                    maskLayout = new MaskLayout[dims[u] * dims[v]];
+                    mask = new uint[dims[u] * dims[v] * 2];
+                    maskLayout = new MaskLayout[dims[u] * dims[v] * 2];
                 }
                 q[d] = 1;
 
@@ -421,7 +435,15 @@ namespace Trix.Rendering
                             maskLayout[n].data = 0u;
                             if ((a != 0) == (b != 0))
                             {
-                                mask[n] = 0;
+                                if (d == 1)
+                                {
+                                    mask[n] = a;
+                                    maskLayout[n].HiddenFace = true;
+                                }
+                                else
+                                {
+                                    mask[n] = 0;
+                                }
                             }
                             else if (a != 0)
                             {
@@ -430,8 +452,15 @@ namespace Trix.Rendering
                             }
                             else
                             {
-                                mask[n] = x[d] < dims[d] - 1 ? b : 0;
-                                maskLayout[n].BackFace = true;
+                                if (d == 1)
+                                {
+                                    mask[n] = 0;
+                                }
+                                else
+                                {
+                                    mask[n] = x[d] < dims[d] - 1 ? b : 0;
+                                    maskLayout[n].BackFace = true;
+                                }
                             }
 
                             if (disableAO || mask[n] == 0)
@@ -589,23 +618,24 @@ namespace Trix.Rendering
                                     vertices[3].Position = new Vector3(x[0] + dv[0], x[1] + dv[1], x[2] + dv[2]);
                                 }
 
-                                var v0 = (ushort)layer.mesh.Add(vertices[0]);
-                                var v1 = (ushort)layer.mesh.Add(vertices[1]);
-                                var v2 = (ushort)layer.mesh.Add(vertices[2]);
-                                var v3 = (ushort)layer.mesh.Add(vertices[3]);
+                                var mesh = a.HiddenFace ? layer.hiddenMesh : layer.visibleMesh;
+                                var v0 = mesh.Add(vertices[0]);
+                                var v1 = mesh.Add(vertices[1]);
+                                var v2 = mesh.Add(vertices[2]);
+                                var v3 = mesh.Add(vertices[3]);
 
                                 if (aoFace)
                                 {
-                                    var v4 = (ushort)layer.mesh.Add(vertices[4]);
-                                    layer.mesh.Triangle(v0, v4, v1);
-                                    layer.mesh.Triangle(v1, v4, v2);
-                                    layer.mesh.Triangle(v2, v4, v3);
-                                    layer.mesh.Triangle(v3, v4, v0);
+                                    var v4 = mesh.Add(vertices[4]);
+                                    mesh.Triangle(v0, v4, v1);
+                                    mesh.Triangle(v1, v4, v2);
+                                    mesh.Triangle(v2, v4, v3);
+                                    mesh.Triangle(v3, v4, v0);
 
                                 }
                                 else
                                 {
-                                    layer.mesh.Quad(v0, v1, v2, v3);
+                                    mesh.Quad(v0, v1, v2, v3);
                                 }
 
                                 //Zero-out mask
@@ -629,8 +659,9 @@ namespace Trix.Rendering
                 }
             }
 
-            layer.mesh.Update();
-            return layer.mesh.VertexCount;
+            layer.visibleMesh.Update();
+            layer.hiddenMesh.Update();
+            return layer.visibleMesh.VertexCount + layer.hiddenMesh.VertexCount;
         }
 
     }

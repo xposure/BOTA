@@ -13,9 +13,9 @@ namespace Trix
         private Matrix projection = Matrix.Identity;
         private Matrix view = Matrix.Identity;
 
-        private Vector3 position = new Vector3(0, -10, 0);
+        private Vector3 position = new Vector3(100, -10, 100);
         private Vector3 angle = new Vector3();
-        private float moveSpeed = 25f;
+        private float moveSpeed = 15f;
         private float turnSpeed = 25f;
         private BoundingFrustum frustum = new BoundingFrustum(Matrix.Identity);
 
@@ -57,12 +57,14 @@ namespace Trix
         public Camera(GraphicsDevice device)
         {
             float ratio = (float)device.Viewport.Width / (float)device.Viewport.Height;
-            projection = Matrix.CreatePerspectiveFieldOfView(MathHelper.PiOver4, ratio, 0.1f, 10000);
+            projection = Matrix.CreateOrthographic(device.Viewport.Width / 8, device.Viewport.Height / 8, 0, 1000);
+            //projection = Matrix.CreatePerspectiveFieldOfView(MathHelper.PiOver4, ratio, 0.1f, 10000);
 
             var mouse = Mouse.GetState();
             mousePosition = new Vector2(mouse.Position.X, mouse.Position.Y);
             mouseWheel = mouse.ScrollWheelValue;
-            Depth = 100;
+            Depth = 60;
+            zoomDistance = 10;
         }
 
         public void Update(Game game, GameTime gameTime, KeyboardState keyboard, MouseState mouse)
@@ -77,7 +79,7 @@ namespace Trix
         }
 
         int mouseWheel;
-        float avatarYaw = 0;
+        float avatarYaw = (float)Math.PI / 4f;
         float zoomDistance = 25;
         Vector2 mousePosition;
         Vector3 thirdPersonReference = new Vector3(0, 1, -1);
@@ -106,16 +108,16 @@ namespace Trix
                 }
                 else
                 {
-                    moveVector.X += mouseDelta.X * dt * moveSpeed;
-                    moveVector.Z += mouseDelta.Y * dt * moveSpeed;
+                    moveVector.X -= mouseDelta.X / zoomDistance ;
+                    moveVector.Z -= mouseDelta.Y / zoomDistance;
                 }
             }
             else if (mouseScrollDelta != 0)
             {
-                if (keyboard.IsKeyDown(Keys.LeftControl))
+                if (keyboard.IsKeyDown(Keys.LeftShift))
                 {
                     if (mouseScrollDelta != 0)
-                        zoomDistance = MathHelper.Clamp(zoomDistance + dt * mouseScrollDelta, 10, 100);
+                        zoomDistance = MathHelper.Clamp(zoomDistance - dt * mouseScrollDelta, 10, 100);
                 }
                 else
                 {
@@ -125,17 +127,19 @@ namespace Trix
                         position.Y++;
                 }
             }
+            else 
+            {
+                if (keyboard.IsKeyDown(Keys.D))
+                    moveVector.X -= moveSpeed * dt;
+                if (keyboard.IsKeyDown(Keys.A))
+                    moveVector.X += moveSpeed * dt;
+                if (keyboard.IsKeyDown(Keys.W))
+                    moveVector.Z += moveSpeed * dt;
+                if (keyboard.IsKeyDown(Keys.S))
+                    moveVector.Z -= moveSpeed * dt;
+            }
 
-
-            if (keyboard.IsKeyDown(Keys.D))
-                moveVector.X -= moveSpeed * dt;
-            if (keyboard.IsKeyDown(Keys.A))
-                moveVector.X += moveSpeed * dt;
-            if (keyboard.IsKeyDown(Keys.W))
-                moveVector.Z += moveSpeed * dt;
-            if (keyboard.IsKeyDown(Keys.S))
-                moveVector.Z -= moveSpeed * dt;
-
+            projection = Matrix.CreateOrthographic(game.GraphicsDevice.Viewport.Width / zoomDistance, game.GraphicsDevice.Viewport.Height / zoomDistance, -1000, 1000);
 
             Matrix rotationMatrix = Matrix.CreateRotationY(avatarYaw);
 

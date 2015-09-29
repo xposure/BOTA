@@ -32,7 +32,7 @@ namespace Trix.Map
         {
             var d = (int)camera.Position.Y;
             for (var i = 0; i < depth && i < d ; ++i)
-                layers[i].Render(effect);
+                layers[i].Render(effect,camera);
         }
 
         public void Generate(DefaultWorldGenerator gen)
@@ -43,7 +43,7 @@ namespace Trix.Map
             //layers[1].Fill(MapCell.GRASS);
             gen.Init();
             gen.Start();
-            gen.BuildWorld(0, 0, 0, this);
+            gen.BuildWorld(10, 0, 10, this);
 
             for (var i = 0; i < depth; ++i)
             {

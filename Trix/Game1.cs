@@ -34,10 +34,17 @@ namespace Trix
         private World world;
         bool wireFrameEnabled = false;
 
+
+        public static int verticesRendered = 0;
+
         public Game1()
         {
             graphics = new GraphicsDeviceManager(this);
             Content.RootDirectory = "Content";
+            graphics.PreferredBackBufferWidth = 1280;
+            graphics.PreferredBackBufferHeight = 768;
+            graphics.SynchronizeWithVerticalRetrace = false;
+            IsFixedTimeStep = false;
         }
 
         /// <summary>
@@ -151,6 +158,8 @@ namespace Trix
             world.Generate(generator);
 
             arialFont = Content.Load<SpriteFont>("fonts/arial");
+
+            
         }
 
         /// <summary>
@@ -237,7 +246,7 @@ namespace Trix
             base.Update(gameTime);
         }
 
-        private int lastSecond = 0;
+        private double lastFrameTime = 0.0;
         private List<string> debugText = new List<string>(32);
 
         public void AddDebugText(string text)
@@ -252,24 +261,22 @@ namespace Trix
 
         protected override void Draw(GameTime gameTime)
         {
+            verticesRendered = 0;
+
+            var fps = (int)(1.0 / (gameTime.ElapsedGameTime.TotalSeconds * 0.9 + lastFrameTime * 0.1));
+            lastFrameTime = gameTime.ElapsedGameTime.TotalSeconds;
+
             debugText.Clear();
+
+            AddDebugText("FPS: " + fps);
             AddDebugText("Position: " + camera.Position.ToString());
             AddDebugText("Zoom: " + camera.Zoom);
 
+            basicEffect.Projection = camera.Projection;
+            wireFrame.Projection = camera.Projection;
 
             GraphicsDevice.Clear(Color.CornflowerBlue);
 
-            var currentSecond = (int)gameTime.TotalGameTime.TotalSeconds;
-            if (lastSecond != currentSecond)
-            {
-                lastSecond = currentSecond;
-                var vertexCount = 0;
-                //for (var x = 0; x < gridSize; x++)
-                //    for (var z = 0; z < gridSize; z++)
-                //        vertexCount += grid[x, z].opaqueMesh.PrimitiveCount;
-
-                System.Diagnostics.Trace.WriteLine(1 / gameTime.ElapsedGameTime.TotalSeconds + ":" + vertexCount);
-            }
             if (wireFrameEnabled)
             {
                 var rast = new RasterizerState();
@@ -280,11 +287,14 @@ namespace Trix
             else
                 GraphicsDevice.RasterizerState = RasterizerState.CullCounterClockwise;
 
+            this.GraphicsDevice.DepthStencilState = DepthStencilState.Default;
+
             //var culled = _chunkManager.Draw(gameTime, basicEffect, wireFrameEnabled ? wireFrame : null, camera);
             world.Render(basicEffect, camera);
             //System.Diagnostics.Trace.WriteLine(culled);
 
 
+            AddDebugText("Vertices: " + verticesRendered);
             spriteBatch.Begin();
             for (var i = 0; i < debugText.Count;i++)
                 spriteBatch.DrawString(arialFont, debugText[i], new Vector2(0, i * arialFont.LineSpacing), Color.White);

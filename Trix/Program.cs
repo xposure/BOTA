@@ -19,7 +19,9 @@ namespace Trix
      * Unloading
      * Culling
      *  - Breadth First Search using flood fill to determine what should be rendered
-     *  
+     * Terrain
+     *  - Mouse picking
+     *  - 
      */
 
 #if WINDOWS || LINUX

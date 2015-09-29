@@ -48,7 +48,7 @@ namespace Trix.Map
             MapCells[LAVA] = new MapCellDescriptor(Color.OrangeRed);
             MapCells[DIRT] = new MapCellDescriptor(Color.Brown);
 
-            MapCells[HIDDEN] = new MapCellDescriptor(Color.Black);
+            MapCells[HIDDEN] = new MapCellDescriptor(new Color(0.1f, 0.1f, 0.1f, 1));
 
             for (var i = 0; i < MapCells.Length; ++i)
                 if (MapCells[i] == null)
