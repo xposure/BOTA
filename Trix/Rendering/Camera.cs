@@ -64,7 +64,7 @@ namespace Trix
             mousePosition = new Vector2(mouse.Position.X, mouse.Position.Y);
             mouseWheel = mouse.ScrollWheelValue;
             Depth = 60;
-            zoomDistance = 10;
+            zoomDistance = 15;
         }
 
         public void Update(Game game, GameTime gameTime, KeyboardState keyboard, MouseState mouse)
@@ -96,7 +96,15 @@ namespace Trix
             var newScrollWheel = mouse.ScrollWheelValue;
             var mouseScrollDelta = mouseWheel - newScrollWheel;
             //swivel around point
-            if (mouse.LeftButton == ButtonState.Pressed)
+            if (mouse.RightButton == ButtonState.Pressed)
+            {
+                if (mouseDelta.X != 0)
+                    avatarYaw += mouseDelta.X * dt;
+
+                if (mouseDelta.Y != 0)
+                    thirdPersonReference.Y = MathHelper.Clamp(thirdPersonReference.Y - mouseDelta.Y * dt, 1, 2);
+            }
+            else if (mouse.LeftButton == ButtonState.Pressed)
             {
                 if (keyboard.IsKeyDown(Keys.LeftShift))
                 {
@@ -108,7 +116,7 @@ namespace Trix
                 }
                 else
                 {
-                    moveVector.X -= mouseDelta.X / zoomDistance ;
+                    moveVector.X -= mouseDelta.X / zoomDistance;
                     moveVector.Z -= mouseDelta.Y / zoomDistance;
                 }
             }
@@ -127,7 +135,7 @@ namespace Trix
                         position.Y++;
                 }
             }
-            else 
+            else
             {
                 if (keyboard.IsKeyDown(Keys.D))
                     moveVector.X -= moveSpeed * dt;

@@ -263,8 +263,8 @@ namespace Trix
         {
             verticesRendered = 0;
 
-            var fps = (int)(1.0 / (gameTime.ElapsedGameTime.TotalSeconds * 0.9 + lastFrameTime * 0.1));
-            lastFrameTime = gameTime.ElapsedGameTime.TotalSeconds;
+            lastFrameTime = (gameTime.ElapsedGameTime.TotalSeconds * 0.0005 + lastFrameTime * 0.9995);
+            var fps = (int)(1.0 / lastFrameTime);
 
             debugText.Clear();
 

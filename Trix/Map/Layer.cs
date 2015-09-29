@@ -59,6 +59,16 @@ namespace Trix.Map
             var zDistance = camera.Depth - zLevel;
             const int zFadeRange = 32;
 
+            if (cameraDepth < this.zLevel + 1)
+            {
+                //effect.Alpha = 0.5f;
+                return;
+            }
+            else
+            {
+                effect.Alpha = 1f;
+            }
+
             if (zDistance > zFadeRange)
                 effect.AmbientLightColor = new Vector3(0, 0, 0);
             else if (zDistance > 0)
@@ -66,7 +76,8 @@ namespace Trix.Map
             else
                 effect.AmbientLightColor = Vector3.One;
 
-            var verts = 0;
+           
+
             foreach (var pass in effect.CurrentTechnique.Passes)
             {
                 effect.World = Matrix.CreateTranslation(new Vector3(0, zLevel, 0));

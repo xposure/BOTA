@@ -30,8 +30,7 @@ namespace Trix.Map
 
         public void Render(BasicEffect effect, Camera camera)
         {
-            var d = (int)camera.Position.Y;
-            for (var i = 0; i < depth && i < d ; ++i)
+            for (var i = 0; i < depth ; ++i)
                 layers[i].Render(effect,camera);
         }
 
