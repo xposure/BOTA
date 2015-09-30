@@ -346,3 +346,61 @@ namespace Trix
         }
     }
 }
+
+
+
+/*
+        protected override void Draw(GameTime gameTime)
+        {
+            GraphicsDevice.SetRenderTarget(renderTarget);
+            spriteBatch.Begin();
+            spriteBatch.Draw(testImage, Vector2.Zero, Color.White);
+            spriteBatch.End();
+
+            GraphicsDevice.SetRenderTarget(null);
+
+            Viewport viewport = GraphicsDevice.Viewport;
+            Matrix projection = Matrix.CreateOrthographicOffCenter(0, viewport.Width, viewport.Height, 0, 0, 1);
+            Matrix halfPixelOffset = Matrix.CreateTranslation(-0.5f, -0.5f, 0);
+            //fxaaEffect.Parameters["TheTexture"].SetValue(renderTarget);
+            fxaaEffect.Parameters["World"].SetValue(Matrix.Identity);
+            fxaaEffect.Parameters["View"].SetValue(Matrix.Identity);
+            fxaaEffect.Parameters["Projection"].SetValue(halfPixelOffset * projection);
+            fxaaEffect.Parameters["InverseViewportSize"].SetValue(new Vector2(1f / viewport.Width, 1f / viewport.Height));
+            fxaaEffect.Parameters["ConsoleSharpness"].SetValue(new Vector4(
+                -N / viewport.Width,
+                -N / viewport.Height,
+                N / viewport.Width,
+                N / viewport.Height
+                ));
+            fxaaEffect.Parameters["ConsoleOpt1"].SetValue(new Vector4(
+                -2.0f / viewport.Width,
+                -2.0f / viewport.Height,
+                2.0f / viewport.Width,
+                2.0f / viewport.Height
+                ));
+            fxaaEffect.Parameters["ConsoleOpt2"].SetValue(new Vector4(
+                8.0f / viewport.Width,
+                8.0f / viewport.Height,
+                -4.0f / viewport.Width,
+                -4.0f / viewport.Height
+                ));
+            fxaaEffect.Parameters["SubPixelAliasingRemoval"].SetValue(subPixelAliasingRemoval);
+            fxaaEffect.Parameters["EdgeThreshold"].SetValue(edgeTheshold);
+            fxaaEffect.Parameters["EdgeThresholdMin"].SetValue(edgeThesholdMin);
+            fxaaEffect.Parameters["ConsoleEdgeSharpness"].SetValue(consoleEdgeSharpness);
+            fxaaEffect.Parameters["ConsoleEdgeThreshold"].SetValue(consoleEdgeThreshold);
+            fxaaEffect.Parameters["ConsoleEdgeThresholdMin"].SetValue(consoleEdgeThresholdMin);
+            fxaaEffect.CurrentTechnique = fxaaEffect.Techniques[useFXAA ? "FXAA" : "Standard"];
+
+            spriteBatch.Begin(SpriteSortMode.Immediate, BlendState.Opaque, SamplerState.LinearClamp, null, null, fxaaEffect);
+            spriteBatch.Draw(renderTarget, Vector2.Zero, Color.White);
+            spriteBatch.End();
+
+            // Instructions:
+            DrawText(110, 80);
+
+            base.Draw(gameTime);
+        }
+
+*/
