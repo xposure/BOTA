@@ -78,11 +78,11 @@ namespace Trix.Map
             else
                 effect.AmbientLightColor = Vector3.One;
 
-           
 
+
+            effect.World = Matrix.CreateTranslation(new Vector3(0, zLevel, 0));
             foreach (var pass in effect.CurrentTechnique.Passes)
             {
-                effect.World = Matrix.CreateTranslation(new Vector3(0, zLevel, 0));
                 pass.Apply();
                 visibleMesh.Draw();
                 Game1.verticesRendered += visibleMesh.VertexCount;

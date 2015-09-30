@@ -45,6 +45,7 @@
     <Compile Include="Generators\Fill.cs" />
     <Compile Include="Generators\Generators.cs" />
     <Compile Include="Generators\SimpleHeightMap.cs" />
+    <Compile Include="GridRayTracer.cs" />
     <Compile Include="Utility.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

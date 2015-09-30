@@ -34,7 +34,7 @@ namespace Trix
         private World world;
         bool wireFrameEnabled = false;
 
-
+        private VoxelVolume selection;
         public static int verticesRendered = 0;
 
         public Game1()
@@ -70,7 +70,7 @@ namespace Trix
             //_volume = new Volume(_chunkManager, 0, 0, 0, data, new Dimensions(new int[] { 3, 3, 3 }));
 
             camera = new Camera(this.GraphicsDevice);
-         
+
             //float tilt = MathHelper.ToRadians(0);  // 0 degree angle
             //// Use the world matrix to tilt the cube along x and y axes.
             //worldMatrix = Matrix.CreateRotationX(tilt) * Matrix.CreateRotationY(tilt);
@@ -159,7 +159,7 @@ namespace Trix
 
             arialFont = Content.Load<SpriteFont>("fonts/arial");
 
-            
+            selection = new VoxelVolume(this.GraphicsDevice, new Dimensions(new int[] { world.Size, 1, world.Size }));
         }
 
         /// <summary>
@@ -198,19 +198,20 @@ namespace Trix
 
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || newKeyboardState.IsKeyDown(Keys.Escape))
                 Exit();
-            else if(isRunning && this.Window != null)
+            else if (isRunning && this.Window != null)
             {
                 if (newKeyboardState.IsKeyUp(Keys.F) && keyboardState.IsKeyDown(Keys.F))
                     wireFrameEnabled = !wireFrameEnabled;
                 keyboardState = newKeyboardState;
 
-                if (newKeyboardState.IsKeyDown(Keys.L)) {
+                if (newKeyboardState.IsKeyDown(Keys.L))
+                {
                     if (basicEffect.LightingEnabled)
                     {
                         basicEffect.DirectionalLight0.Enabled = true; // enable each light individually
                         if (basicEffect.DirectionalLight0.Enabled)
                         {
-                            light +=  (float)gameTime.ElapsedGameTime.TotalSeconds;
+                            light += (float)gameTime.ElapsedGameTime.TotalSeconds;
                             if (light > 1f)
                                 light = 0f;
 
@@ -269,7 +270,8 @@ namespace Trix
             debugText.Clear();
 
             AddDebugText("FPS: " + fps);
-            AddDebugText("Position: " + camera.Position.ToString());
+            AddDebugText("Position: " + camera.TargetPosition.ToString());
+            AddDebugText("Direction: " + camera.Direction.ToString());
             AddDebugText("Zoom: " + camera.Zoom);
 
             basicEffect.Projection = camera.Projection;
@@ -295,11 +297,50 @@ namespace Trix
 
 
             AddDebugText("Vertices: " + verticesRendered);
+
+            selection.Clear();
+
+            var dir = camera.Direction;
+            var start = camera.Position;
+            var end = camera.Position + dir * 100;
+            var foundCell = false;
+            var cellPosition = Vector3.Zero;
+            foreach (var p in GridRayTracer.Trace(start, end))
+            {
+                var x = (int)p.X;
+                var y = (int)p.Y;
+                var z = (int)p.Z;
+
+                var cell = world[x, z, y];
+                if (!cell.Meta.IsEmpty)
+                {
+                    selection[x, 0, y] = 0x00ffff;
+                    foundCell = true;
+                    cellPosition = p;
+                    Rendering.SurfaceExtractor.ExtractMesh(selection, disableAO: true);
+                    break;
+                }
+            }
+
+            AddDebugText("Ray {{ start: {0}, end: {1}, hit: {2} }}", start, end, cellPosition);
+
             spriteBatch.Begin();
-            for (var i = 0; i < debugText.Count;i++)
+            for (var i = 0; i < debugText.Count; i++)
                 spriteBatch.DrawString(arialFont, debugText[i], new Vector2(0, i * arialFont.LineSpacing), Color.White);
             spriteBatch.End();
 
+            if (foundCell)
+            {
+                basicEffect.Alpha = 0.5f;
+                basicEffect.World = Matrix.CreateTranslation(new Vector3(0, cellPosition.Y, 0));
+
+                this.GraphicsDevice.DepthStencilState = DepthStencilState.None;
+                foreach (var pass in basicEffect.CurrentTechnique.Passes)
+                {
+                    pass.Apply();
+                    selection.opaqueMesh.Draw();
+                }
+            }
 
             base.Draw(gameTime);
         }

@@ -53,6 +53,13 @@ namespace Trix.Map
         public int Height { get { return dims[1]; } }
         public int Depth { get { return dims[2]; } }
 
+        public void Clear()
+        {
+
+            for (var i = 0; i < data.Length; i++)
+                data[i] = 0;
+        }
+
         public virtual uint GetRelativeVoxel(int x, int y, int z)
         {
             if (x < 0 || y < 0 || z < 0 || x >= dims[0] || y >= dims[1] || z >= dims[2])

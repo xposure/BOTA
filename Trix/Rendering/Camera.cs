@@ -13,13 +13,17 @@ namespace Trix
         private Matrix projection = Matrix.Identity;
         private Matrix view = Matrix.Identity;
 
-        private Vector3 position = new Vector3(100, -10, 100);
+        private Vector3 direction = Vector3.Zero;
+        private Vector3 targetPosition = new Vector3(100, -10, 100);
+        private Vector3 cameraPosition = new Vector3(100, -10, 100);
         private Vector3 angle = new Vector3();
         private float moveSpeed = 15f;
         private float turnSpeed = 25f;
         private BoundingFrustum frustum = new BoundingFrustum(Matrix.Identity);
 
         public BoundingFrustum Frustum { get { return frustum; } }
+
+        public Vector3 Direction { get { return direction; } }
 
         public Matrix Projection
         {
@@ -31,11 +35,13 @@ namespace Trix
             get { return view; }
         }
 
-        public Vector3 Position
+        public Vector3 TargetPosition
         {
-            get { return position; }
-            set { position = value; }
+            get { return targetPosition; }
+            set { targetPosition = value; }
         }
+
+        public Vector3 Position { get { return cameraPosition; } }
 
         public Vector3 Angle
         {
@@ -50,8 +56,8 @@ namespace Trix
 
         public int Depth
         {
-            get { return (int)position.Y; }
-            set { position.Y = MathHelper.Clamp(value, 1, 128); }
+            get { return (int)targetPosition.Y; }
+            set { targetPosition.Y = MathHelper.Clamp(value, 1, 128); }
         }
 
         public Camera(GraphicsDevice device)
@@ -130,9 +136,9 @@ namespace Trix
                 else
                 {
                     if (mouseScrollDelta > 0)
-                        position.Y--;
+                        targetPosition.Y--;
                     else
-                        position.Y++;
+                        targetPosition.Y++;
                 }
             }
             else
@@ -152,7 +158,7 @@ namespace Trix
             Matrix rotationMatrix = Matrix.CreateRotationY(avatarYaw);
 
             if (moveVector.LengthSquared() != 0)
-                position += Vector3.Transform(moveVector, rotationMatrix);
+                targetPosition += Vector3.Transform(moveVector, rotationMatrix);
 
             // Create a vector pointing the direction the camera is facing.
             Vector3 transformedReference =
@@ -161,10 +167,10 @@ namespace Trix
             transformedReference *= zoomDistance;
 
             // Calculate the position the camera is looking from.
-            Vector3 cameraPosition = transformedReference + position;
+            cameraPosition = transformedReference + targetPosition;
 
-            view = Matrix.CreateLookAt(cameraPosition, position, new Vector3(0.0f, 1.0f, 0.0f));
-
+            view = Matrix.CreateLookAt(cameraPosition, targetPosition, new Vector3(0.0f, 1.0f, 0.0f));
+            direction = Vector3.Normalize(transformedReference);
             frustum.Matrix = View * Projection;
         }
 
@@ -189,25 +195,25 @@ namespace Trix
                 adjustedMoveSpeed += 100;
 
             if (keyboard.IsKeyDown(Keys.S))
-                position -= forward * adjustedMoveSpeed * delta;
+                targetPosition -= forward * adjustedMoveSpeed * delta;
 
             if (keyboard.IsKeyDown(Keys.W))
-                position += forward * adjustedMoveSpeed * delta;
+                targetPosition += forward * adjustedMoveSpeed * delta;
 
             if (keyboard.IsKeyDown(Keys.D))
-                position -= left * adjustedMoveSpeed * delta;
+                targetPosition -= left * adjustedMoveSpeed * delta;
 
             if (keyboard.IsKeyDown(Keys.A))
-                position += left * adjustedMoveSpeed * delta;
+                targetPosition += left * adjustedMoveSpeed * delta;
 
             if (keyboard.IsKeyDown(Keys.Space))
-                position += Vector3.Down * adjustedMoveSpeed * delta;
+                targetPosition += Vector3.Down * adjustedMoveSpeed * delta;
 
             if (keyboard.IsKeyDown(Keys.Z))
-                position += Vector3.Up * adjustedMoveSpeed * delta;
+                targetPosition += Vector3.Up * adjustedMoveSpeed * delta;
 
             view = Matrix.Identity;
-            view *= Matrix.CreateTranslation(position);
+            view *= Matrix.CreateTranslation(targetPosition);
             view *= Matrix.CreateRotationZ(angle.Z);
             view *= Matrix.CreateRotationY(angle.Y);
             view *= Matrix.CreateRotationX(angle.X);
