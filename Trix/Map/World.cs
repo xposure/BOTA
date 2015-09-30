@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using Microsoft.Xna.Framework.Graphics;
@@ -31,23 +32,49 @@ namespace Trix.Map
         public void Render(BasicEffect effect, Camera camera)
         {
             for (var i = 0; i < depth ; ++i)
-                layers[i].Render(effect,camera);
+                layers[depth - i - 1].Render(effect,camera);
         }
 
         public void Generate(DefaultWorldGenerator gen)
         {
-        //    layers[0].Fill(MapCell.BEDROCK);
-        //    layers[1].Fill(MapCell.BEDROCK);
-        //    layers[2].Fill(MapCell.BEDROCK);
+            //    layers[0].Fill(MapCell.BEDROCK);
+            //    layers[1].Fill(MapCell.BEDROCK);
+            //    layers[2].Fill(MapCell.BEDROCK);
             //layers[1].Fill(MapCell.GRASS);
-            gen.Init();
-            gen.Start();
-            gen.BuildWorld(10, 0, 10, this);
-
-            for (var i = 0; i < depth; ++i)
+            var sw = Stopwatch.StartNew();
             {
-                layers[i].UpdateHiddenCells();
-                layers[i].BuildMesh();
+                gen.Init();
+                gen.Start();
+                gen.BuildWorld(10, 0, 10, this);
+            }
+            sw.Stop();
+            System.Diagnostics.Trace.WriteLine("World Gen: " + sw.Elapsed.ToString());
+
+            sw.Restart();
+            {
+                for (var i = 0; i < depth; ++i)
+                    layers[i].UpdateHiddenCells();
+            }
+            sw.Stop();
+            System.Diagnostics.Trace.WriteLine("Hidden Face Update: " + sw.Elapsed.ToString());
+
+            sw.Restart();
+            {
+                for (var i = 0; i < depth; ++i)
+                    layers[i].BuildMesh();
+            }
+            sw.Stop();
+            System.Diagnostics.Trace.WriteLine("Mesh Build: " + sw.Elapsed.ToString());
+
+        }
+
+        public Layer this[int z]
+        {
+            get
+            {
+                if (z < 0 || z >= depth)
+                    return null;
+                return layers[z];
             }
         }
 

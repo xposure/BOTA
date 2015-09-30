@@ -147,7 +147,7 @@ namespace Trix
                     moveVector.Z -= moveSpeed * dt;
             }
 
-            projection = Matrix.CreateOrthographic(game.GraphicsDevice.Viewport.Width / zoomDistance, game.GraphicsDevice.Viewport.Height / zoomDistance, -1000, 1000);
+            projection = Matrix.CreateOrthographic(game.GraphicsDevice.Viewport.Width / zoomDistance, game.GraphicsDevice.Viewport.Height / zoomDistance, -100, 100);
 
             Matrix rotationMatrix = Matrix.CreateRotationY(avatarYaw);
 

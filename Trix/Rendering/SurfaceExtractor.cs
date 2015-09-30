@@ -371,20 +371,39 @@ namespace Trix.Rendering
             layer.visibleMesh.Clear();
             layer.hiddenMesh.Clear();
 
-            VertexPositionColorNormal[] vertices = new VertexPositionColorNormal[4];
+            VertexPositionColorNormal[] vertices = new VertexPositionColorNormal[5];
 
+            var layerDepth = layer.Depth;
+            var lowerLayer = world[layerDepth - 1];
+            var upperLayer = world[layerDepth + 1];
+            var depth = world.Depth;
+            var size = world.Size;
+            var cells = layer.GetCells();
             var dims = new int[] { world.Size, 1, world.Size };
 
             var f = new Func<int, int, int, uint>((i, j, k) =>
             {
-                if (i < 0 || k < 0 || i >= world.Size || k >= world.Size || j < 0 || j >= world.Depth)
+                var idx = i | k;
+                if (i < 0 || k < 0 || i >= size || k >= size)
                     return 0;
 
                 MapCell cell;
-                if (j != 0)
-                    cell = world[i, k, j + layer.Depth];
+                if (j < 0)
+                {
+                    if (lowerLayer == null)
+                        return 0;
+
+                    cell = lowerLayer[i + k * size];
+                }
+                else if (j > 0)
+                {
+                    if (upperLayer == null)
+                        return 0;
+
+                    cell = upperLayer[i + k * size];
+                }
                 else
-                    cell = layer[i, k];
+                    cell = cells[i + k * size];
 
                 if (cell.Hidden)
                     return 0xff;
@@ -406,8 +425,8 @@ namespace Trix.Rendering
 
                 if (mask.Length < dims[u] * dims[v])
                 {
-                    mask = new uint[dims[u] * dims[v] * 2];
-                    maskLayout = new MaskLayout[dims[u] * dims[v] * 2];
+                    mask = new uint[dims[u] * dims[v] * 3 / 2];
+                    maskLayout = new MaskLayout[dims[u] * dims[v] * 3 / 2];
                 }
                 q[d] = 1;
 
@@ -432,6 +451,7 @@ namespace Trix.Rendering
                             var a = f(x[0], x[1], x[2]);
                             var b = f(x[0] + q[0], x[1] + q[1], x[2] + q[2]);
 
+                            mask[n] = 0;
                             maskLayout[n].data = 0u;
                             if ((a != 0) == (b != 0))
                             {
@@ -463,7 +483,7 @@ namespace Trix.Rendering
                                 }
                             }
 
-                            if (disableAO || mask[n] == 0)
+                            if (disableAO || mask[n] == 0 || maskLayout[n].HiddenFace)
                             {
                                 //maskLayout[n].data = 4095u;
                             }
@@ -512,8 +532,8 @@ namespace Trix.Rendering
                                      a11 = neighbors[3],
                                      a10 = neighbors[0];
 
-                                //if (a00 + a01 + a11 + a10 != 12)
-                                //    maskLayout[n].AOFace = true;
+                                if (a00 + a01 + a11 + a10 != 12)
+                                    maskLayout[n].AOFace = true;
                             }
                         }
                     }
@@ -594,29 +614,16 @@ namespace Trix.Rendering
                                 {
                                     var pao = disableAO ? 1f : AOcurve[maskLayout[n].GetOcclusion(o)];
                                     //vertices[o].Color = new Color(cr * pao, cg * pao, cb * pao);
-                                    vertices[o].Color = new Color(cr * aoFactor, cg * aoFactor, cb * aoFactor);
+                                    vertices[o].Color = new Color(cr * pao, cg * pao, cb * pao);
                                     vertices[o].Normal = normal;
                                     ao += pao;
                                 }
                                 ao /= 4f;
 
-                                if (aoFace)
-                                {
-                                    vertices[0].Position = new Vector3(x[0], x[1], x[2]);
-                                    vertices[1].Position = new Vector3(x[0] + du[0], x[1] + du[1], x[2] + du[2]);
-                                    vertices[2].Position = new Vector3(x[0] + du[0] + dv[0], x[1] + du[1] + dv[1], x[2] + du[2] + dv[2]);
-                                    vertices[3].Position = new Vector3(x[0] + dv[0], x[1] + dv[1], x[2] + dv[2]);
-                                    vertices[4].Position = (vertices[0].Position + vertices[1].Position + vertices[2].Position + vertices[3].Position) / 4;
-                                    vertices[4].Normal = normal;
-                                    vertices[4].Color = new Color(cr * ao, cg * ao, cb * ao);
-                                }
-                                else
-                                {
-                                    vertices[0].Position = new Vector3(x[0], x[1], x[2]);
-                                    vertices[1].Position = new Vector3(x[0] + du[0], x[1] + du[1], x[2] + du[2]);
-                                    vertices[2].Position = new Vector3(x[0] + du[0] + dv[0], x[1] + du[1] + dv[1], x[2] + du[2] + dv[2]);
-                                    vertices[3].Position = new Vector3(x[0] + dv[0], x[1] + dv[1], x[2] + dv[2]);
-                                }
+                                vertices[0].Position = new Vector3(x[0], x[1], x[2]);
+                                vertices[1].Position = new Vector3(x[0] + du[0], x[1] + du[1], x[2] + du[2]);
+                                vertices[2].Position = new Vector3(x[0] + du[0] + dv[0], x[1] + du[1] + dv[1], x[2] + du[2] + dv[2]);
+                                vertices[3].Position = new Vector3(x[0] + dv[0], x[1] + dv[1], x[2] + dv[2]);
 
                                 var mesh = a.HiddenFace ? layer.hiddenMesh : layer.visibleMesh;
                                 var v0 = mesh.Add(vertices[0]);
@@ -626,6 +633,10 @@ namespace Trix.Rendering
 
                                 if (aoFace)
                                 {
+                                    vertices[4].Position = (vertices[0].Position + vertices[1].Position + vertices[2].Position + vertices[3].Position) / 4;
+                                    vertices[4].Normal = normal;
+                                    vertices[4].Color = new Color(cr * ao, cg * ao, cb * ao);
+
                                     var v4 = mesh.Add(vertices[4]);
                                     mesh.Triangle(v0, v4, v1);
                                     mesh.Triangle(v1, v4, v2);
@@ -644,7 +655,7 @@ namespace Trix.Rendering
                                     for (k = 0; k < w; ++k)
                                     {
                                         mask[n + k + l * dims[u]] = 0;
-                                        maskLayout[n + k + l * dims[u]].data = 4095u;
+                                        maskLayout[n + k + l * dims[u]].data = 0;
                                     }
                                 }
                                 //Increment counters and continue

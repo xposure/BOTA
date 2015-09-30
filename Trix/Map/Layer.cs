@@ -17,6 +17,8 @@ namespace Trix.Map
         public DynamicMesh<VertexPositionColorNormal> visibleMesh;
         public DynamicMesh<VertexPositionColorNormal> hiddenMesh;
 
+        public MapCell[] GetCells() { return mapCells; }
+
         public Layer(World world, int z)
         {
             this.world = world;
