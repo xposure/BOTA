@@ -24,6 +24,7 @@ namespace Trix
         BasicEffect basicEffect;
         BasicEffect wireFrame;
         SpriteFont arialFont;
+        Effect voxelEffect;
         //Matrix worldMatrix;
         //Matrix viewMatrix;
         //Matrix projectionMatrix;
@@ -158,6 +159,7 @@ namespace Trix
             world.Generate(generator);
 
             arialFont = Content.Load<SpriteFont>("fonts/arial");
+            voxelEffect = Content.Load<Effect>("shaders/voxelshader");
 
             selection = new VoxelVolume(this.GraphicsDevice, new Dimensions(new int[] { world.Size, 1, world.Size }));
         }
@@ -170,7 +172,6 @@ namespace Trix
         {
             // Create a new SpriteBatch, which can be used to draw textures.
             spriteBatch = new SpriteBatch(GraphicsDevice);
-
             // TODO: use this.Content to load your game content here
         }
 
@@ -274,6 +275,9 @@ namespace Trix
             AddDebugText("Direction: " + camera.Direction.ToString());
             AddDebugText("Zoom: " + camera.Zoom);
 
+            voxelEffect.Parameters["Projection"].SetValue(camera.Projection);
+            voxelEffect.Parameters["View"].SetValue(camera.View);
+
             basicEffect.Projection = camera.Projection;
             wireFrame.Projection = camera.Projection;
 
@@ -292,7 +296,7 @@ namespace Trix
             this.GraphicsDevice.DepthStencilState = DepthStencilState.Default;
 
             //var culled = _chunkManager.Draw(gameTime, basicEffect, wireFrameEnabled ? wireFrame : null, camera);
-            world.Render(basicEffect, camera);
+            world.Render(voxelEffect, camera);
             //System.Diagnostics.Trace.WriteLine(culled);
 
 

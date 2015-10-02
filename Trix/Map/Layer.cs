@@ -55,7 +55,7 @@ namespace Trix.Map
                 mapCells[i] = cell;
         }
 
-        public void Render(BasicEffect effect, Camera camera)
+        public void Render(Effect effect, Camera camera)
         {
             var cameraDepth = camera.Depth;
             var zDistance = camera.Depth - zLevel;
@@ -68,19 +68,19 @@ namespace Trix.Map
             }
             else
             {
-                effect.Alpha = 1f;
+                //effect.Alpha = 1f;
             }
 
-            if (zDistance > zFadeRange)
-                effect.AmbientLightColor = new Vector3(0, 0, 0);
-            else if (zDistance > 0)
-                effect.AmbientLightColor = Vector3.One / zFadeRange * (zFadeRange  - zDistance);
-            else
-                effect.AmbientLightColor = Vector3.One;
+            //if (zDistance > zFadeRange)
+            //    effect.AmbientLightColor = new Vector3(0, 0, 0);
+            //else if (zDistance > 0)
+            //    effect.AmbientLightColor = Vector3.One / zFadeRange * (zFadeRange  - zDistance);
+            //else
+            //    effect.AmbientLightColor = Vector3.One;
 
 
+            effect.Parameters["World"].SetValue(Matrix.CreateTranslation(new Vector3(0, zLevel, 0)));
 
-            effect.World = Matrix.CreateTranslation(new Vector3(0, zLevel, 0));
             foreach (var pass in effect.CurrentTechnique.Passes)
             {
                 pass.Apply();
