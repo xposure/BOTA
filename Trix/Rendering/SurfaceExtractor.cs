@@ -625,6 +625,11 @@ namespace Trix.Rendering
                                 vertices[2].Position = new Vector3(x[0] + du[0] + dv[0], x[1] + du[1] + dv[1], x[2] + du[2] + dv[2]);
                                 vertices[3].Position = new Vector3(x[0] + dv[0], x[1] + dv[1], x[2] + dv[2]);
 
+                                //vertices[0].Position += new Vector3(0.25f, 0.25f, 0.25f);
+                                //vertices[1].Position += new Vector3(0.25f, 0.25f, 0.25f);
+                                //vertices[2].Position += new Vector3(0.25f, 0.25f, 0.25f);
+                                //vertices[3].Position += new Vector3(0.25f, 0.25f, 0.25f);
+
                                 var mesh = a.HiddenFace ? layer.hiddenMesh : layer.visibleMesh;
                                 var v0 = mesh.Add(vertices[0]);
                                 var v1 = mesh.Add(vertices[1]);
