@@ -130,24 +130,6 @@ namespace Trix
                     basicEffect.DirectionalLight0.SpecularColor = Vector3.Zero;
                     //basicEffect.DirectionalLight0.SpecularColor = Vector3.One;
                 }
-
-                //basicEffect.DirectionalLight1.Enabled = true;
-                //if (basicEffect.DirectionalLight1.Enabled)
-                //{
-                //    // y direction
-                //    basicEffect.DirectionalLight1.DiffuseColor = new Vector3(0, 0.75f, 0);
-                //    basicEffect.DirectionalLight1.Direction = Vector3.Normalize(new Vector3(0, -1, 0));
-                //    basicEffect.DirectionalLight1.SpecularColor = Vector3.One;
-                //}
-
-                //basicEffect.DirectionalLight2.Enabled = true;
-                //if (basicEffect.DirectionalLight2.Enabled)
-                //{
-                //    // z direction
-                //    basicEffect.DirectionalLight2.DiffuseColor = new Vector3(0, 0, 0.5f);
-                //    basicEffect.DirectionalLight2.Direction = Vector3.Normalize(new Vector3(0, 0, -1));
-                //    basicEffect.DirectionalLight2.SpecularColor = Vector3.One;
-                //}
             }
 
             mouseState = Mouse.GetState();
