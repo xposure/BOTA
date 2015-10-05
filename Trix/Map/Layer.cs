@@ -13,6 +13,7 @@ namespace Trix.Map
     {
         private World world;
         private MapCell[] mapCells;
+        private Texture2D texture;
         private int zLevel;
         public DynamicMesh<VertexPositionColorNormal> visibleMesh;
         public DynamicMesh<VertexPositionColorNormal> hiddenMesh;
@@ -26,9 +27,16 @@ namespace Trix.Map
             this.zLevel = z;
             this.visibleMesh = new DynamicMesh<VertexPositionColorNormal>(world.Device);
             this.hiddenMesh = new DynamicMesh<VertexPositionColorNormal>(world.Device);
+            this.texture = new Texture2D(world.Device, world.Size, world.Size);
+
+            var texData = new Color[world.Size * world.Size];
+            for (var i = 0; i < world.Size; i++)
+                texData[i] = Color.Yellow;
+
+            this.texture.SetData(texData);
         }
 
-        public int Depth { get { return zLevel; } }
+        public int Depth { get { return zLevel; } } 
 
         public MapCell this[int index]
         {
@@ -78,7 +86,8 @@ namespace Trix.Map
             //else
             //    effect.AmbientLightColor = Vector3.One;
 
-
+            world.Device.Textures[0] = texture;
+            effect.Parameters["Texture"].SetValue(texture);
             effect.Parameters["World"].SetValue(Matrix.CreateTranslation(new Vector3(0, zLevel, 0)));
 
             foreach (var pass in effect.CurrentTechnique.Passes)
