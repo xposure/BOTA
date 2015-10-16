@@ -11,12 +11,51 @@ namespace Trix
     //https://www.giawa.com
     //http://devblog.andyc.org/2011/06/ - networking post and resources
 
+
+    public enum RenderMode
+    {
+        Solid = 1,
+        Wireframe = 2
+    }
+
     /// <summary>
     /// This is the main type for your game.
     /// </summary>
-    public class Game1 : Game
+    public class Root : Game
     {
+        #region Static Variables
+        private static Root instance;
+
+        public static Root Instance { get { return instance; } }
+        #endregion Static Variables
+
+        #region Variables
         GraphicsDeviceManager graphics;
+
+
+        private RenderMode renderMode = RenderMode.Solid;
+
+        private Camera sceneCamera;
+
+        private Camera guiCamera;
+
+
+        
+        #endregion
+
+        #region Properties
+        public RenderMode RenderMode
+        {
+            get { return renderMode; }
+            set { renderMode = value; }
+        }
+
+        public Camera GUICamera { get { return guiCamera; } }
+        public Camera SceneCamera { get { return sceneCamera; } }
+        public GraphicsDevice Device { get { return this.GraphicsDevice; } }
+
+        #endregion
+
         SpriteBatch spriteBatch;
 
         ChunkManager _chunkManager;
@@ -31,22 +70,24 @@ namespace Trix
         //float zoom = 25;
         MouseState mouseState;
         KeyboardState keyboardState;
-        Camera camera;
         private World world;
         bool wireFrameEnabled = false;
 
         private VoxelVolume selection;
         public static int verticesRendered = 0;
 
-        public Game1()
+        public Root(int width = 1280, int height = 768, bool vsync = true, bool fixedstep = true, string content = "Content")
         {
+            instance = this;
+            Content.RootDirectory = content;
+            IsFixedTimeStep = fixedstep;
+
             graphics = new GraphicsDeviceManager(this);
-            Content.RootDirectory = "Content";
-            graphics.PreferredBackBufferWidth = 1280;
-            graphics.PreferredBackBufferHeight = 768;
-            graphics.SynchronizeWithVerticalRetrace = false;
-            IsFixedTimeStep = false;
+            graphics.PreferredBackBufferWidth = width;
+            graphics.PreferredBackBufferHeight = height;
+            graphics.SynchronizeWithVerticalRetrace = vsync;
         }
+
 
         /// <summary>
         /// Allows the game to perform any initialization it needs to before starting to run.
@@ -57,6 +98,7 @@ namespace Trix
         protected override void Initialize()
         {
             // TODO: Add your initialization logic here
+            instance = this;
 
             base.Initialize();
 
@@ -70,7 +112,7 @@ namespace Trix
 
             //_volume = new Volume(_chunkManager, 0, 0, 0, data, new Dimensions(new int[] { 3, 3, 3 }));
 
-            camera = new Camera(this.GraphicsDevice);
+            sceneCamera = new Camera(this.GraphicsDevice);
 
             //float tilt = MathHelper.ToRadians(0);  // 0 degree angle
             //// Use the world matrix to tilt the cube along x and y axes.
@@ -88,7 +130,7 @@ namespace Trix
 
             basicEffect.World = Matrix.Identity;
             basicEffect.View = Matrix.Identity;
-            basicEffect.Projection = camera.Projection;
+            basicEffect.Projection = sceneCamera.Projection;
 
             // primitive color
             basicEffect.AmbientLightColor = new Vector3(0.1f, 0.1f, 0.1f);
@@ -105,7 +147,7 @@ namespace Trix
 
             wireFrame.World = Matrix.Identity;
             wireFrame.View = Matrix.Identity;
-            wireFrame.Projection = camera.Projection;
+            wireFrame.Projection = sceneCamera.Projection;
 
             // primitive color
             wireFrame.AmbientLightColor = new Vector3(0.1f, 0.1f, 0.1f);
@@ -152,6 +194,7 @@ namespace Trix
         /// </summary>
         protected override void LoadContent()
         {
+            instance = this;
             // Create a new SpriteBatch, which can be used to draw textures.
             spriteBatch = new SpriteBatch(GraphicsDevice);
             // TODO: use this.Content to load your game content here
@@ -163,6 +206,7 @@ namespace Trix
         /// </summary>
         protected override void UnloadContent()
         {
+            instance = this;
             // TODO: Unload any non ContentManager content here
         }
 
@@ -171,12 +215,14 @@ namespace Trix
 
         protected override void OnExiting(object sender, System.EventArgs args)
         {
+            instance = this;
             isRunning = false;
             base.OnExiting(sender, args);
         }
 
         protected override void Update(GameTime gameTime)
         {
+            instance = this;
             var newKeyboardState = Keyboard.GetState();
 
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || newKeyboardState.IsKeyDown(Keys.Escape))
@@ -211,10 +257,10 @@ namespace Trix
 
                 var newMouseState = Mouse.GetState();
 
-                camera.Update(this, gameTime, newKeyboardState, newMouseState);
+                sceneCamera.Update(this, gameTime, newKeyboardState, newMouseState);
 
-                basicEffect.View = camera.View;
-                wireFrame.View = camera.View;
+                basicEffect.View = sceneCamera.View;
+                wireFrame.View = sceneCamera.View;
 
                 //if (mouseState.ScrollWheelValue != newMouseState.ScrollWheelValue)
                 //{
@@ -245,6 +291,7 @@ namespace Trix
 
         protected override void Draw(GameTime gameTime)
         {
+            instance = this;
             verticesRendered = 0;
 
             lastFrameTime = (gameTime.ElapsedGameTime.TotalSeconds * 0.0005 + lastFrameTime * 0.9995);
@@ -253,15 +300,15 @@ namespace Trix
             debugText.Clear();
 
             AddDebugText("FPS: " + fps);
-            AddDebugText("Position: " + camera.TargetPosition.ToString());
-            AddDebugText("Direction: " + camera.Direction.ToString());
-            AddDebugText("Zoom: " + camera.Zoom);
+            AddDebugText("Position: " + sceneCamera.TargetPosition.ToString());
+            AddDebugText("Direction: " + sceneCamera.Direction.ToString());
+            AddDebugText("Zoom: " + sceneCamera.Zoom);
 
-            voxelEffect.Parameters["Projection"].SetValue(camera.Projection);
-            voxelEffect.Parameters["View"].SetValue(camera.View);
+            voxelEffect.Parameters["Projection"].SetValue(sceneCamera.Projection);
+            voxelEffect.Parameters["View"].SetValue(sceneCamera.View);
 
-            basicEffect.Projection = camera.Projection;
-            wireFrame.Projection = camera.Projection;
+            basicEffect.Projection = sceneCamera.Projection;
+            wireFrame.Projection = sceneCamera.Projection;
 
             GraphicsDevice.Clear(Color.CornflowerBlue);
 
@@ -278,7 +325,7 @@ namespace Trix
             this.GraphicsDevice.DepthStencilState = DepthStencilState.Default;
 
             //var culled = _chunkManager.Draw(gameTime, basicEffect, wireFrameEnabled ? wireFrame : null, camera);
-            world.Render(voxelEffect, camera);
+            world.Render(voxelEffect, sceneCamera);
             //System.Diagnostics.Trace.WriteLine(culled);
 
 
@@ -286,9 +333,9 @@ namespace Trix
 
             selection.Clear();
 
-            var dir = camera.Direction;
-            var start = camera.Position;
-            var end = camera.Position + dir * 100;
+            var dir = sceneCamera.Direction;
+            var start = sceneCamera.Position;
+            var end = sceneCamera.Position + dir * 100;
             var foundCell = false;
             var cellPosition = Vector3.Zero;
             foreach (var p in GridRayTracer.Trace(start, end))

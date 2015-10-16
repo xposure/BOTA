@@ -94,12 +94,12 @@ namespace Trix.Map
             {
                 pass.Apply();
                 visibleMesh.Draw();
-                Game1.verticesRendered += visibleMesh.VertexCount;
+                Root.verticesRendered += visibleMesh.VertexCount;
 
                 if (camera.Depth == this.zLevel + 1)
                 {
                     hiddenMesh.Draw();
-                    Game1.verticesRendered += hiddenMesh.VertexCount;
+                    Root.verticesRendered += hiddenMesh.VertexCount;
                 }
             }
 

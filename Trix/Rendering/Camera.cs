@@ -8,6 +8,7 @@ using Microsoft.Xna.Framework.Input;
 
 namespace Trix
 {
+
     public class Camera
     {
         private Matrix projection = Matrix.Identity;
